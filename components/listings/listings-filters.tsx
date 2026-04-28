@@ -1,0 +1,238 @@
+"use client";
+
+import { Filter, Search, SlidersHorizontal } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useState, useTransition } from "react";
+import { POPULAR_CAR_BRANDS } from "@/lib/carBrands";
+
+function countActiveFilters(sp: URLSearchParams): number {
+  let n = 0;
+  if (sp.get("q")?.trim()) n += 1;
+  if (sp.get("brand")) n += 1;
+  if (sp.get("minPrice")) n += 1;
+  if (sp.get("maxPrice")) n += 1;
+  if (sp.get("minYear")) n += 1;
+  if (sp.get("maxYear")) n += 1;
+  return n;
+}
+
+type Props = {
+  basePath: string;
+  defaults?: {
+    search?: string;
+    minPrice?: string;
+    maxPrice?: string;
+    minYear?: string;
+    maxYear?: string;
+  };
+};
+
+const inputBase =
+  "w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground shadow-sm outline-none transition-shadow placeholder:text-muted focus-visible:border-brand/40 focus-visible:ring-2 focus-visible:ring-brand/20";
+
+const inputClass = `mt-1.5 ${inputBase}`;
+
+export function ListingsFilters({ basePath, defaults = {} }: Props) {
+  const router = useRouter();
+  const sp = useSearchParams();
+  const [pending, startTransition] = useTransition();
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount = countActiveFilters(sp);
+  const [search, setSearch] = useState(defaults.search ?? sp.get("q") ?? "");
+  const [minPrice, setMinPrice] = useState(
+    defaults.minPrice ?? sp.get("minPrice") ?? "",
+  );
+  const [maxPrice, setMaxPrice] = useState(
+    defaults.maxPrice ?? sp.get("maxPrice") ?? "",
+  );
+  const [minYear, setMinYear] = useState(
+    defaults.minYear ?? sp.get("minYear") ?? "",
+  );
+  const [maxYear, setMaxYear] = useState(
+    defaults.maxYear ?? sp.get("maxYear") ?? "",
+  );
+
+  const apply = useCallback(() => {
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("q", search.trim());
+    const brand = sp.get("brand");
+    if (brand) params.set("brand", brand);
+    if (minPrice.trim()) params.set("minPrice", minPrice.trim());
+    if (maxPrice.trim()) params.set("maxPrice", maxPrice.trim());
+    if (minYear.trim()) params.set("minYear", minYear.trim());
+    if (maxYear.trim()) params.set("maxYear", maxYear.trim());
+    const qs = params.toString();
+    startTransition(() => {
+      router.push(qs ? `${basePath}?${qs}` : basePath);
+    });
+  }, [basePath, router, search, minPrice, maxPrice, minYear, maxYear, sp]);
+
+  const selectedBrand = sp.get("brand");
+
+  const toggleBrand = useCallback(
+    (b: string) => {
+      const next = new URLSearchParams(sp.toString());
+      if (selectedBrand === b) {
+        next.delete("brand");
+      } else {
+        next.set("brand", b);
+      }
+      next.delete("page");
+      const qs = next.toString();
+      startTransition(() => {
+        router.push(qs ? `${basePath}?${qs}` : basePath);
+      });
+    },
+    [basePath, router, sp, selectedBrand],
+  );
+
+  return (
+    <div>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          id="listing-filters-toggle"
+          aria-expanded={filtersOpen}
+          aria-controls="listing-filters-panel"
+          onClick={() => setFiltersOpen((v) => !v)}
+          className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+        >
+          <Filter className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+          <span>Filters</span>
+          {activeFilterCount > 0 ? (
+            <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-brand px-1.5 py-0.5 text-[11px] font-bold leading-none text-brand-foreground">
+              {activeFilterCount}
+            </span>
+          ) : null}
+        </button>
+      </div>
+
+      {filtersOpen ? (
+        <div
+          id="listing-filters-panel"
+          role="region"
+          aria-labelledby="listing-filters-toggle"
+          className="mt-4 overflow-hidden rounded-2xl border border-border bg-card shadow-card"
+        >
+          <div className="border-b border-border bg-surface/50 px-5 py-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <SlidersHorizontal className="h-4 w-4 text-muted" aria-hidden />
+              Refine results
+            </div>
+            <p className="mt-1 text-xs text-muted">
+              Brand chips apply instantly. Other fields use &ldquo;Apply filters&rdquo;.
+            </p>
+          </div>
+
+          <div className="p-5">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+              Brand
+            </p>
+            <div
+              className="mt-3 flex flex-wrap gap-2"
+              role="group"
+              aria-label="Filter by brand"
+            >
+              {POPULAR_CAR_BRANDS.map((brand) => {
+                const active = selectedBrand === brand;
+                return (
+                  <button
+                    key={brand}
+                    type="button"
+                    onClick={() => toggleBrand(brand)}
+                    className={
+                      active
+                        ? "rounded-full border border-brand bg-brand/10 px-3.5 py-1.5 text-sm font-semibold text-foreground ring-1 ring-brand/25"
+                        : "rounded-full border border-border bg-background px-3.5 py-1.5 text-sm font-medium text-muted transition-colors hover:border-brand/30 hover:text-foreground"
+                    }
+                  >
+                    {brand}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid gap-4 border-t border-border p-5 sm:grid-cols-2 lg:grid-cols-3">
+            <label className="text-sm font-medium text-foreground">
+              Search
+              <span className="relative mt-1.5 block">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+                  aria-hidden
+                />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Brand, model, title"
+                  className={`${inputBase} pl-9`}
+                />
+              </span>
+            </label>
+            <label className="text-sm font-medium text-foreground">
+              Min price (PHP)
+              <input
+                type="number"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-sm font-medium text-foreground">
+              Max price (PHP)
+              <input
+                type="number"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-sm font-medium text-foreground">
+              Min year
+              <input
+                type="number"
+                value={minYear}
+                onChange={(e) => setMinYear(e.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="text-sm font-medium text-foreground">
+              Max year
+              <input
+                type="number"
+                value={maxYear}
+                onChange={(e) => setMaxYear(e.target.value)}
+                className={inputClass}
+              />
+            </label>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 border-t border-border bg-surface/30 px-5 py-4">
+            <button
+              type="button"
+              onClick={apply}
+              disabled={pending}
+              className="inline-flex min-h-10 items-center justify-center rounded-xl bg-brand px-5 text-sm font-semibold text-brand-foreground transition-opacity disabled:opacity-60"
+            >
+              {pending ? "Applying…" : "Apply filters"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setMinPrice("");
+                setMaxPrice("");
+                setMinYear("");
+                setMaxYear("");
+                startTransition(() => router.push(basePath));
+              }}
+              className="text-sm font-medium text-muted underline-offset-4 transition-colors hover:text-foreground hover:underline"
+            >
+              Clear all
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}

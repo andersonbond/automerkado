@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String                @id @default(cuid())
+  email                String                @unique
+  passwordHash         String
+  name                 String
+  role                 String                @default("USER")
+  lastLoginAt          DateTime?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  bids                 Bid[]
+  inspectionRequests   InspectionRequest[]
+}
+
+model Category {
+  id    String @id @default(cuid())
+  slug  String @unique
+  name  String
+  cars  Car[]
+}
+
+model Car {
+  id                    String                @id @default(cuid())
+  slug                  String                @unique
+  title                 String
+  brand                 String
+  model                 String
+  year                  Int
+  price                 Decimal
+  description           String
+  categoryId            String
+  category              Category              @relation(fields: [categoryId], references: [id])
+  biddingManuallyClosed Boolean               @default(false)
+  status                String                @default("LISTED")
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  images                CarImage[]
+  bids                  Bid[]
+  inspectionRequests  InspectionRequest[]
+  fileAssets            FileAsset[]
+
+  @@index([categoryId])
+  @@index([brand, model])
+}
+
+model CarImage {
+  id        String   @id @default(cuid())
+  carId     String?
+  car       Car?     @relation(fields: [carId], references: [id], onDelete: Cascade)
+  path      String
+  sortOrder Int      @default(0)
+  alt       String?
+  createdAt DateTime @default(now())
+}
+
+model Bid {
+  id        String   @id @default(cuid())
+  carId     String
+  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Decimal
+  createdAt DateTime @default(now())
+
+  @@index([carId, createdAt])
+  @@index([userId])
+}
+
+model FileAsset {
+  id        String   @id @default(cuid())
+  name      String
+  path      String
+  mime      String
+  size      Int
+  carId     String?
+  car       Car?     @relation(fields: [carId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  body        String
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model InspectionRequest {
+  id        String   @id @default(cuid())
+  carId     String
+  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note      String?
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([carId])
+  @@index([userId])
+}
