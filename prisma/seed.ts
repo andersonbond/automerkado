@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import { hash } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 
