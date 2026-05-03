@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { RepossessedListingCountdownCard } from "@/components/listings/repossessed-listing-countdown";
 import { getRepossessedListingExpiresAtIso } from "@/lib/repossessedListing";
+import { isPublicUploadPath } from "@/lib/nextImage";
 
 type CarRow = {
   id: string;
@@ -58,6 +59,7 @@ export function CarGrid({
                     src={img}
                     alt={car.images[0]?.alt ?? car.title}
                     fill
+                    unoptimized={isPublicUploadPath(img)}
                     className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />

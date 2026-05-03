@@ -10,6 +10,7 @@ import {
   countAdminCars,
   listAdminCars,
 } from "@/lib/repositories/carRepository";
+import { isPublicUploadPath } from "@/lib/nextImage";
 
 function buildCarsListUrl(page: number, q: string) {
   const params = new URLSearchParams();
@@ -273,6 +274,7 @@ function CarThumb({ path, title }: { path?: string; title: string }) {
         alt=""
         width={size}
         height={size}
+        unoptimized={isPublicUploadPath(path)}
         className="h-full w-full object-cover"
         sizes="56px"
       />

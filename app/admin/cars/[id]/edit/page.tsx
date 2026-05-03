@@ -17,6 +17,7 @@ import type { Prisma } from "@prisma/client";
 import { PhpFormattedPriceInput } from "@/components/admin/php-formatted-price-input";
 import { deleteCarAction, updateCarAction } from "@/lib/actions/cars";
 import { prisma } from "@/lib/db";
+import { isPublicUploadPath } from "@/lib/nextImage";
 
 const editCarPageInclude = {
   category: true,
@@ -398,6 +399,7 @@ function EditCarGallery({
             src={heroPath}
             alt={images[0]?.alt ?? title}
             fill
+            unoptimized={isPublicUploadPath(heroPath)}
             className="object-cover"
             sizes="(max-width: 1024px) 100vw, 380px"
             priority
@@ -421,6 +423,7 @@ function EditCarGallery({
                 src={im.path}
                 alt={im.alt ?? ""}
                 fill
+                unoptimized={isPublicUploadPath(im.path)}
                 className="object-cover"
                 sizes="96px"
               />

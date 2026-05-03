@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useCallback, useEffect, useId, useState } from "react";
+import { isPublicUploadPath } from "@/lib/nextImage";
 
 export type CarGalleryImage = {
   id: string;
@@ -99,6 +100,7 @@ export function CarListingGallery({
           src={primary.path}
           alt={altFor(primary)}
           fill
+          unoptimized={isPublicUploadPath(primary.path)}
           className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02] group-focus-visible:scale-[1.02]"
           sizes={heroSizes}
           priority
@@ -134,6 +136,7 @@ export function CarListingGallery({
                     src={im.path}
                     alt={altFor(im)}
                     fill
+                    unoptimized={isPublicUploadPath(im.path)}
                     className="object-cover"
                     sizes={thumbSizes}
                   />
@@ -194,6 +197,7 @@ export function CarListingGallery({
                   src={list[lightboxIndex].path}
                   alt={altFor(list[lightboxIndex])}
                   fill
+                  unoptimized={isPublicUploadPath(list[lightboxIndex].path)}
                   className="object-contain"
                   sizes="95vw"
                   priority

@@ -17,6 +17,7 @@ import {
 } from "@/lib/repositories/carRepository";
 import { getRepossessedListingExpiresAtIso } from "@/lib/repossessedListing";
 import { absoluteUrl } from "@/lib/site";
+import { isPublicUploadPath } from "@/lib/nextImage";
 
 export const metadata: Metadata = {
   title: "Certified & repossessed cars in the Philippines",
@@ -207,6 +208,7 @@ export default async function HomePage() {
                         src={img}
                         alt={car.title}
                         fill
+                        unoptimized={isPublicUploadPath(img)}
                         className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                         sizes="(max-width: 768px) 100vw, 33vw"
                       />
