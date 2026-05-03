@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { deactivateExpiredRepossessedListings } from "@/lib/services/repossessedExpiry";
 
 export class InspectionError extends Error {
   constructor(
@@ -15,6 +16,8 @@ export async function createInspectionRequest(input: {
   userId: string;
   note?: string;
 }) {
+  await deactivateExpiredRepossessedListings();
+
   const car = await prisma.car.findFirst({
     where: { id: input.carId, status: "LISTED" },
   });

@@ -1,5 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import {
+  AdminCarsMobileCard,
+  AdminCarsTableRow,
+} from "@/components/admin/admin-cars-clickable-row";
 import { Car, PlusCircle, Search, X } from "lucide-react";
 import {
   ADMIN_CARS_PAGE_SIZE,
@@ -139,35 +143,41 @@ export default async function AdminCarsPage({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface">
+            <tbody>
               {cars.map((car) => (
-                <tr key={car.id} className="hover:bg-surface/40">
-                  <td className="px-4 py-3">
+                <AdminCarsTableRow
+                  key={car.id}
+                  editHref={`/admin/cars/${car.id}/edit`}
+                  title={car.title}
+                >
+                  <td className="px-4 py-3 align-middle">
                     <CarThumb path={car.images[0]?.path} title={car.title} />
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 align-middle">
                     <p className="font-medium text-foreground">{car.title}</p>
                     <p className="mt-0.5 text-xs text-muted">/{car.slug}</p>
                   </td>
-                  <td className="px-4 py-3 text-muted">{car.category.name}</td>
-                  <td className="px-4 py-3 tabular-nums text-foreground">
+                  <td className="px-4 py-3 align-middle text-muted">
+                    {car.category.name}
+                  </td>
+                  <td className="px-4 py-3 align-middle tabular-nums text-foreground">
                     PHP {Number(car.price).toLocaleString("en-PH")}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 align-middle">
                     <StatusBadge status={car.status} />
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 align-middle">
                     <BiddingLabel closed={car.biddingManuallyClosed} />
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right align-middle">
                     <Link
                       href={`/admin/cars/${car.id}/edit`}
-                      className="font-semibold text-brand hover:underline"
+                      className="inline-flex font-semibold text-brand hover:underline"
                     >
                       Edit
                     </Link>
                   </td>
-                </tr>
+                </AdminCarsTableRow>
               ))}
             </tbody>
           </table>
@@ -187,30 +197,32 @@ export default async function AdminCarsPage({
           </li>
         ) : (
           cars.map((car) => (
-            <li
+            <AdminCarsMobileCard
               key={car.id}
-              className="flex gap-3 rounded-xl border border-surface bg-white p-4 shadow-sm"
+              editHref={`/admin/cars/${car.id}/edit`}
+              title={car.title}
             >
-              <CarThumb path={car.images[0]?.path} title={car.title} />
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-foreground">{car.title}</p>
-                <p className="mt-0.5 truncate text-xs text-muted">/{car.slug}</p>
-                <p className="mt-2 text-xs text-muted">{car.category.name}</p>
-                <p className="mt-1 text-sm font-medium tabular-nums text-foreground">
-                  PHP {Number(car.price).toLocaleString("en-PH")}
-                </p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <StatusBadge status={car.status} />
-                  <BiddingLabel closed={car.biddingManuallyClosed} />
+              <div className="flex gap-3">
+                <CarThumb path={car.images[0]?.path} title={car.title} />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-foreground">{car.title}</p>
+                  <p className="mt-0.5 truncate text-xs text-muted">
+                    /{car.slug}
+                  </p>
+                  <p className="mt-2 text-xs text-muted">{car.category.name}</p>
+                  <p className="mt-1 text-sm font-medium tabular-nums text-foreground">
+                    PHP {Number(car.price).toLocaleString("en-PH")}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <StatusBadge status={car.status} />
+                    <BiddingLabel closed={car.biddingManuallyClosed} />
+                  </div>
+                  <p className="mt-3 text-xs font-medium text-brand/90">
+                    Tap anywhere on this card to edit
+                  </p>
                 </div>
-                <Link
-                  href={`/admin/cars/${car.id}/edit`}
-                  className="mt-3 inline-block text-sm font-semibold text-brand hover:underline"
-                >
-                  Edit
-                </Link>
               </div>
-            </li>
+            </AdminCarsMobileCard>
           ))
         )}
       </ul>

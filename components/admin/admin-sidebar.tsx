@@ -6,6 +6,7 @@ import {
   ExternalLink,
   FolderOpen,
   Image,
+  Inbox,
   LayoutDashboard,
   Settings,
 } from "lucide-react";
@@ -17,6 +18,7 @@ const links = [
   { href: "/admin/images", label: "Images", Icon: Image },
   { href: "/admin/files", label: "Files", Icon: FolderOpen },
   { href: "/admin/inspections", label: "Inspections", Icon: ClipboardList },
+  { href: "/admin/inquiries", label: "Inquiries", Icon: Inbox },
   { href: "/admin/settings", label: "Settings", Icon: Settings },
 ] as const;
 

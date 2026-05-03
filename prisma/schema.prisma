@@ -27,6 +27,15 @@ model Category {
   cars  Car[]
 }
 
+model Tag {
+  id    String @id @default(cuid())
+  slug  String @unique
+  name  String
+  cars  Car[]
+
+  @@index([slug])
+}
+
 model Car {
   id                    String                @id @default(cuid())
   slug                  String                @unique
@@ -44,11 +53,29 @@ model Car {
   updatedAt             DateTime              @updatedAt
   images                CarImage[]
   bids                  Bid[]
-  inspectionRequests  InspectionRequest[]
+  inspectionRequests    InspectionRequest[]
+  inquiries             CarInquiry[]
   fileAssets            FileAsset[]
+  tags                  Tag[]
 
   @@index([categoryId])
   @@index([brand, model])
+}
+
+model CarInquiry {
+  id        String   @id @default(cuid())
+  carId     String
+  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  kind      String
+  firstName String
+  mobile    String
+  email     String?
+  message   String?
+  bidAmount Decimal?
+  createdAt DateTime @default(now())
+
+  @@index([carId])
+  @@index([kind])
 }
 
 model CarImage {

@@ -1,8 +1,18 @@
 import type { Metadata } from "next";
+import { absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Contact Automerkado for support and dealership inquiries.",
+  description:
+    "Reach Automerkado for bidding support, listing questions, inspections, or dealer partnerships. We reply promptly during business hours.",
+  alternates: { canonical: absoluteUrl("/contact") },
+  openGraph: {
+    title: "Contact | Automerkado",
+    description:
+      "Get help with bids, inspections, partnerships, or account questions.",
+    url: absoluteUrl("/contact"),
+    type: "website",
+  },
 };
 
 export default function ContactPage() {

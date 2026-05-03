@@ -241,6 +241,7 @@ async function main() {
   await prisma.carImage.deleteMany();
   await prisma.fileAsset.deleteMany();
   await prisma.car.deleteMany();
+  await prisma.tag.deleteMany();
   await prisma.post.deleteMany();
   await prisma.user.deleteMany();
   await prisma.category.deleteMany();
@@ -302,6 +303,24 @@ async function main() {
     });
     createdCars.push(car);
   }
+
+  const tagFullEv = await prisma.tag.create({
+    data: { slug: "full-ev", name: "Full EV" },
+  });
+  const tagPhev = await prisma.tag.create({
+    data: { slug: "phev", name: "PHEV" },
+  });
+
+  await prisma.car.update({
+    where: { slug: "2022-toyota-camry-certified" },
+    data: {
+      tags: { connect: [{ id: tagFullEv.id }, { id: tagPhev.id }] },
+    },
+  });
+  await prisma.car.update({
+    where: { slug: "2021-honda-civic-repo" },
+    data: { tags: { connect: [{ id: tagPhev.id }] } },
+  });
 
   await prisma.bid.create({
     data: {

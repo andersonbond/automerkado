@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Blog",
-  description: "News and guides from Automerkado.",
+  title: "Blog · News & guides",
+  description:
+    "Automerkado guides and updates: bidding tips, vehicle buying in the Philippines, and marketplace announcements.",
+  alternates: { canonical: absoluteUrl("/blog") },
+  openGraph: {
+    title: "Blog | Automerkado",
+    description: "Buying guides and news for certified & repossessed buyers.",
+    url: absoluteUrl("/blog"),
+    type: "website",
+  },
 };
 
 export default async function BlogIndexPage() {

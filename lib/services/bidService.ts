@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { isWeeklyBiddingOpen } from "@/lib/bidding/weeklyClose";
 import { sendBidConfirmationEmail } from "@/lib/mail/sendBidConfirmation";
 import { prisma } from "@/lib/db";
+import { deactivateExpiredRepossessedListings } from "@/lib/services/repossessedExpiry";
 
 const MIN_INCREMENT = new Prisma.Decimal(1000);
 
@@ -48,6 +49,8 @@ export async function placeBid(params: {
     throw new BidError("Amount must be positive", "INVALID");
   }
 
+  await deactivateExpiredRepossessedListings();
+
   const car = await prisma.car.findUnique({
     where: { id: carId },
     include: {
@@ -65,7 +68,7 @@ export async function placeBid(params: {
 
   if (!isWeeklyBiddingOpen()) {
     throw new BidError(
-      "The weekly bidding window is closed (Wednesday 4:00 PM Manila time).",
+      "The weekly bidding window is closed (Thursday–Friday and after Wednesday 4:00 PM Manila time).",
       "CLOSED",
     );
   }

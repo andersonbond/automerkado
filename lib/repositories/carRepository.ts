@@ -1,10 +1,12 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { deactivateExpiredRepossessedListings } from "@/lib/services/repossessedExpiry";
 
 export type CarListFilters = {
   categorySlug?: string;
   brand?: string;
   search?: string;
+  tagSlug?: string;
   minPrice?: number;
   maxPrice?: number;
   minYear?: number;
@@ -28,12 +30,19 @@ export function buildCarWhere(
     where.brand = filters.brand.trim();
   }
 
+  if (filters.tagSlug?.trim()) {
+    where.tags = {
+      some: { slug: filters.tagSlug.trim().toLowerCase() },
+    };
+  }
+
   if (filters.search?.trim()) {
     const q = filters.search.trim();
     where.OR = [
       { title: { contains: q } },
       { brand: { contains: q } },
       { model: { contains: q } },
+      { tags: { some: { name: { contains: q } } } },
     ];
   }
 
@@ -53,11 +62,13 @@ export function buildCarWhere(
 }
 
 export async function countCars(filters: Omit<CarListFilters, "skip" | "take">) {
+  await deactivateExpiredRepossessedListings();
   return prisma.car.count({ where: buildCarWhere(filters) });
 }
 
 const listCarsInclude = {
   category: true,
+  tags: { orderBy: { name: "asc" as const } },
   images: { orderBy: { sortOrder: "asc" as const }, take: 1 },
   bids: {
     orderBy: { amount: "desc" as const },
@@ -66,13 +77,19 @@ const listCarsInclude = {
   },
 } satisfies Prisma.CarInclude;
 
-export type CarListItem = Prisma.CarGetPayload<{
+type CarListPayload = Prisma.CarGetPayload<{
   include: typeof listCarsInclude;
 }>;
+
+/** Explicit `tags` — Prisma `GetPayload` can infer `never` for implicit M2M `tags` in some TS versions. */
+export type CarListItem = Omit<CarListPayload, "tags"> & {
+  tags: { id: string; slug: string; name: string }[];
+};
 
 export async function listCars(
   filters: CarListFilters,
 ): Promise<CarListItem[]> {
+  await deactivateExpiredRepossessedListings();
   const { skip, take, ...rest } = filters;
   return prisma.car.findMany({
     where: buildCarWhere(rest),
@@ -84,10 +101,12 @@ export async function listCars(
 }
 
 export async function getCarBySlug(slug: string) {
+  await deactivateExpiredRepossessedListings();
   return prisma.car.findFirst({
     where: { slug, status: "LISTED" },
     include: {
       category: true,
+      tags: { orderBy: { name: "asc" } },
       images: { orderBy: { sortOrder: "asc" } },
       bids: {
         orderBy: { createdAt: "desc" },
@@ -139,5 +158,21 @@ export async function listAdminCars(params: {
     skip,
     take,
     include: adminCarListInclude,
+  });
+}
+
+/** Tags that appear on at least one LISTED car in this category (for listing filters). */
+export async function listTagsForCategoryListing(categorySlug: string) {
+  return prisma.tag.findMany({
+    where: {
+      cars: {
+        some: {
+          status: "LISTED",
+          category: { slug: categorySlug },
+        },
+      },
+    },
+    select: { slug: true, name: true },
+    orderBy: { name: "asc" },
   });
 }

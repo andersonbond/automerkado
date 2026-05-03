@@ -4,11 +4,25 @@ import { ListingsFilters } from "@/components/listings/listings-filters";
 import { Pagination } from "@/components/listings/pagination";
 import { PAGE_SIZE } from "@/lib/constants";
 import { parseListingsSearchParams } from "@/lib/listingsParams";
-import { countCars, listCars } from "@/lib/repositories/carRepository";
+import {
+  countCars,
+  listCars,
+  listTagsForCategoryListing,
+} from "@/lib/repositories/carRepository";
+import { absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Certified cars",
-  description: "Browse certified pre-owned vehicles on Automerkado.",
+  title: "Certified pre-owned cars",
+  description:
+    "Browse inspected certified inventory in the Philippines. Filter by brand, price, model year, and watch weekly Manila-time bidding schedules.",
+  alternates: { canonical: absoluteUrl("/listings/certified") },
+  openGraph: {
+    title: "Certified cars | Automerkado",
+    description:
+      "Curated certified units with disclosed specs—compare and bid on your schedule.",
+    url: absoluteUrl("/listings/certified"),
+    type: "website",
+  },
 };
 
 export default async function CertifiedListingsPage({
@@ -21,9 +35,10 @@ export default async function CertifiedListingsPage({
   const { page, ...rest } = base;
   const listFilters = { ...rest, categorySlug: "certified" as const };
 
-  const [total, cars] = await Promise.all([
+  const [total, cars, tagOptions] = await Promise.all([
     countCars(listFilters),
     listCars(listFilters),
+    listTagsForCategoryListing("certified"),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -47,10 +62,13 @@ export default async function CertifiedListingsPage({
         </p>
       </div>
       <div className="mt-10">
-        <ListingsFilters basePath="/listings/certified" />
+        <ListingsFilters
+          basePath="/listings/certified"
+          tagOptions={tagOptions}
+        />
       </div>
       <div className="mt-10">
-        <CarGrid cars={cars} />
+        <CarGrid cars={cars} listingBasePath="/listings/certified" />
       </div>
       <Pagination
         basePath="/listings/certified"

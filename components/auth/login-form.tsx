@@ -11,6 +11,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -21,6 +22,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
     const res = await signIn("credentials", {
       email,
       password,
+      remember: remember ? "true" : "false",
       redirect: false,
     });
     setLoading(false);
@@ -60,6 +62,21 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
           onChange={(e) => setPassword(e.target.value)}
           className={inputClass}
         />
+      </label>
+      <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground">
+        <input
+          type="checkbox"
+          checked={remember}
+          onChange={(e) => setRemember(e.target.checked)}
+          className="mt-0.5 h-4 w-4 rounded border-border text-brand focus:ring-brand/30"
+        />
+        <span>
+          <span className="font-medium">Remember me</span>
+          <span className="mt-0.5 block text-xs font-normal text-muted">
+            Stay signed in on this device for up to 30 days. Uncheck to sign out
+            after 12 hours of inactivity.
+          </span>
+        </span>
       </label>
       <button
         type="submit"

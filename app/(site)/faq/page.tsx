@@ -1,28 +1,40 @@
 import type { Metadata } from "next";
+import { FAQ_ENTRIES } from "@/lib/faq-content";
+import { absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "FAQ",
-  description: "Frequently asked questions about Automerkado bidding and inspections.",
+  title: "FAQ · Bidding & inspections",
+  description:
+    "Frequently asked questions about Automerkado: weekly Manila bidding schedules, certified vs repossessed inventory, and inspection requests.",
+  alternates: { canonical: absoluteUrl("/faq") },
+  openGraph: {
+    title: "FAQ | Automerkado",
+    description:
+      "Everything you need to know about bidding windows, listings, and vehicle inspections.",
+    url: absoluteUrl("/faq"),
+  },
 };
 
-const items = [
-  {
-    q: "When does bidding close?",
-    a: "Bidding is open Monday through Tuesday, and on Wednesday until 4:00 PM Asia/Manila. From Wednesday 4:00 PM through Sunday, bidding is paused for the weekly cycle.",
-  },
-  {
-    q: "What is the difference between certified and repossessed?",
-    a: "Certified listings are inspected units sold with additional assurance. Repossessed vehicles are sold as-is; we strongly recommend an inspection before bidding.",
-  },
-  {
-    q: "How do I request an inspection?",
-    a: "Open a vehicle page while signed in and submit an inspection request with any notes for our team.",
-  },
-];
-
 export default function FaqPage() {
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQ_ENTRIES.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.a,
+      },
+    })),
+  };
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+      />
       <p className="text-xs font-semibold uppercase tracking-widest text-muted">
         Help center
       </p>
@@ -30,7 +42,7 @@ export default function FaqPage() {
         FAQ
       </h1>
       <dl className="mt-10 space-y-4">
-        {items.map((item) => (
+        {FAQ_ENTRIES.map((item) => (
           <div
             key={item.q}
             className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6"

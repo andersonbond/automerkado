@@ -9,6 +9,7 @@ function countActiveFilters(sp: URLSearchParams): number {
   let n = 0;
   if (sp.get("q")?.trim()) n += 1;
   if (sp.get("brand")) n += 1;
+  if (sp.get("tag")) n += 1;
   if (sp.get("minPrice")) n += 1;
   if (sp.get("maxPrice")) n += 1;
   if (sp.get("minYear")) n += 1;
@@ -18,6 +19,7 @@ function countActiveFilters(sp: URLSearchParams): number {
 
 type Props = {
   basePath: string;
+  tagOptions?: { slug: string; name: string }[];
   defaults?: {
     search?: string;
     minPrice?: string;
@@ -32,7 +34,11 @@ const inputBase =
 
 const inputClass = `mt-1.5 ${inputBase}`;
 
-export function ListingsFilters({ basePath, defaults = {} }: Props) {
+export function ListingsFilters({
+  basePath,
+  tagOptions = [],
+  defaults = {},
+}: Props) {
   const router = useRouter();
   const sp = useSearchParams();
   const [pending, startTransition] = useTransition();
@@ -57,6 +63,9 @@ export function ListingsFilters({ basePath, defaults = {} }: Props) {
     if (search.trim()) params.set("q", search.trim());
     const brand = sp.get("brand");
     if (brand) params.set("brand", brand);
+    const tag = sp.get("tag");
+    if (tag && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(tag))
+      params.set("tag", tag);
     if (minPrice.trim()) params.set("minPrice", minPrice.trim());
     if (maxPrice.trim()) params.set("maxPrice", maxPrice.trim());
     if (minYear.trim()) params.set("minYear", minYear.trim());
@@ -68,6 +77,7 @@ export function ListingsFilters({ basePath, defaults = {} }: Props) {
   }, [basePath, router, search, minPrice, maxPrice, minYear, maxYear, sp]);
 
   const selectedBrand = sp.get("brand");
+  const selectedTag = sp.get("tag");
 
   const toggleBrand = useCallback(
     (b: string) => {
@@ -84,6 +94,23 @@ export function ListingsFilters({ basePath, defaults = {} }: Props) {
       });
     },
     [basePath, router, sp, selectedBrand],
+  );
+
+  const toggleTag = useCallback(
+    (slug: string) => {
+      const next = new URLSearchParams(sp.toString());
+      if (selectedTag === slug) {
+        next.delete("tag");
+      } else {
+        next.set("tag", slug);
+      }
+      next.delete("page");
+      const qs = next.toString();
+      startTransition(() => {
+        router.push(qs ? `${basePath}?${qs}` : basePath);
+      });
+    },
+    [basePath, router, sp, selectedTag],
   );
 
   return (
@@ -120,7 +147,8 @@ export function ListingsFilters({ basePath, defaults = {} }: Props) {
               Refine results
             </div>
             <p className="mt-1 text-xs text-muted">
-              Brand chips apply instantly. Other fields use &ldquo;Apply filters&rdquo;.
+              Brand and tag chips apply instantly. Other fields use &ldquo;Apply
+              filters&rdquo;.
             </p>
           </div>
 
@@ -153,6 +181,37 @@ export function ListingsFilters({ basePath, defaults = {} }: Props) {
             </div>
           </div>
 
+          {tagOptions.length > 0 ? (
+            <div className="border-t border-border p-5">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+                Tags
+              </p>
+              <div
+                className="mt-3 flex flex-wrap gap-2"
+                role="group"
+                aria-label="Filter by tag"
+              >
+                {tagOptions.map((tag) => {
+                  const active = selectedTag === tag.slug;
+                  return (
+                    <button
+                      key={tag.slug}
+                      type="button"
+                      onClick={() => toggleTag(tag.slug)}
+                      className={
+                        active
+                          ? "rounded-full border border-brand bg-brand/10 px-3.5 py-1.5 text-sm font-semibold text-foreground ring-1 ring-brand/25"
+                          : "rounded-full border border-border bg-background px-3.5 py-1.5 text-sm font-medium text-muted transition-colors hover:border-brand/30 hover:text-foreground"
+                      }
+                    >
+                      {tag.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
           <div className="grid gap-4 border-t border-border p-5 sm:grid-cols-2 lg:grid-cols-3">
             <label className="text-sm font-medium text-foreground">
               Search
@@ -164,7 +223,7 @@ export function ListingsFilters({ basePath, defaults = {} }: Props) {
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Brand, model, title"
+                  placeholder="Brand, model, title, or tag"
                   className={`${inputBase} pl-9`}
                 />
               </span>

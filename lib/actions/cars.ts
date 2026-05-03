@@ -5,7 +5,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { assertAdmin } from "@/lib/actions/admin-guard";
+import { allocateUniqueCarSlug, slugFromTitle } from "@/lib/carSlug";
 import { prisma } from "@/lib/db";
+import { syncCarTags } from "@/lib/syncCarTags";
 import { storeUploadedImage } from "@/lib/upload";
 
 const carSchema = z.object({
@@ -24,15 +26,22 @@ const carSchema = z.object({
   status: z.enum(["LISTED", "SOLD", "INACTIVE"]),
 });
 
+function normalizePriceInput(raw: FormDataEntryValue | null): string {
+  return String(raw ?? "")
+    .replace(/,/g, "")
+    .replace(/\s/g, "")
+    .trim();
+}
+
 function readCarForm(formData: FormData) {
   const biddingManuallyClosed = formData.get("biddingManuallyClosed") === "on";
   return {
     title: String(formData.get("title") ?? ""),
-    slug: String(formData.get("slug") ?? "").toLowerCase(),
+    slug: String(formData.get("slug") ?? "").trim().toLowerCase(),
     brand: String(formData.get("brand") ?? ""),
     model: String(formData.get("model") ?? ""),
     year: formData.get("year"),
-    price: formData.get("price"),
+    price: normalizePriceInput(formData.get("price")),
     description: String(formData.get("description") ?? ""),
     categoryId: String(formData.get("categoryId") ?? ""),
     status: String(formData.get("status") ?? "LISTED"),
@@ -43,21 +52,31 @@ function readCarForm(formData: FormData) {
 export async function createCarAction(formData: FormData) {
   await assertAdmin();
   const raw = readCarForm(formData);
-  const parsed = carSchema.safeParse(raw);
+  const userSlugInput = raw.slug;
+  const slugBase = userSlugInput ? userSlugInput : slugFromTitle(raw.title);
+
+  const parsed = carSchema.safeParse({ ...raw, slug: slugBase });
   if (!parsed.success) {
     redirect("/admin/cars/new?error=1");
   }
   const data = parsed.data;
 
-  const existing = await prisma.car.findUnique({ where: { slug: data.slug } });
-  if (existing) {
-    redirect("/admin/cars/new?error=slug");
+  let finalSlug = data.slug;
+  if (userSlugInput) {
+    const existing = await prisma.car.findUnique({
+      where: { slug: finalSlug },
+    });
+    if (existing) {
+      redirect("/admin/cars/new?error=slug");
+    }
+  } else {
+    finalSlug = await allocateUniqueCarSlug(prisma, slugBase);
   }
 
   const car = await prisma.car.create({
     data: {
       title: data.title,
-      slug: data.slug,
+      slug: finalSlug,
       brand: data.brand,
       model: data.model,
       year: data.year,
@@ -92,10 +111,12 @@ export async function createCarAction(formData: FormData) {
     });
   }
 
+  await syncCarTags(car.id, String(formData.get("tags") ?? ""));
+
   revalidatePath("/");
   revalidatePath("/listings/certified");
   revalidatePath("/listings/repossessed");
-  revalidatePath(`/listings/${car.slug}`);
+  revalidatePath(`/listings/${finalSlug}`);
   revalidatePath("/admin/cars");
   redirect("/admin/cars");
 }
@@ -152,6 +173,8 @@ export async function updateCarAction(formData: FormData) {
       data: { carId: id, path: pathStr, sortOrder: maxOrder },
     });
   }
+
+  await syncCarTags(id, String(formData.get("tags") ?? ""));
 
   revalidatePath("/");
   revalidatePath("/listings/certified");

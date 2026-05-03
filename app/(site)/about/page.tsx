@@ -1,8 +1,17 @@
 import type { Metadata } from "next";
+import { absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "About",
-  description: "Learn about Automerkado and how we list certified and repossessed vehicles.",
+  title: "About us",
+  description:
+    "Automerkado connects Filipino buyers with certified pre-owned and repossessed inventory—honest specs, photos, Manila-time bidding, and inspection workflows.",
+  alternates: { canonical: absoluteUrl("/about") },
+  openGraph: {
+    title: "About Automerkado",
+    description:
+      "How we publish certified vs repossessed inventory and why transparency matters.",
+    url: absoluteUrl("/about"),
+  },
 };
 
 export default function AboutPage() {

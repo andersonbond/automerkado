@@ -26,9 +26,15 @@ export function parseListingsSearchParams(
   const page =
     Number.isFinite(pageRaw) && pageRaw >= 1 ? Math.floor(pageRaw) : 1;
 
+  const tagRaw =
+    typeof sp.tag === "string" ? sp.tag.trim().toLowerCase() : "";
+  const tagSlug =
+    tagRaw && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(tagRaw) ? tagRaw : undefined;
+
   return {
     search: q,
     brand,
+    tagSlug,
     minPrice: Number.isFinite(minPrice) ? minPrice : undefined,
     maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
     minYear: Number.isFinite(minYear) ? minYear : undefined,
