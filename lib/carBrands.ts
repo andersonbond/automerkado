@@ -4,9 +4,7 @@ export const POPULAR_CAR_BRANDS = [
   "Mitsubishi",
   "Suzuki",
   "Ford",
-  "Honda",
   "Nissan",
-  "Mazda",
   "Isuzu",
 ] as const;
 

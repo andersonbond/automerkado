@@ -27,8 +27,8 @@ const iconClass = "h-4 w-4 shrink-0 opacity-90";
 
 export function AdminSidebar() {
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-surface bg-[#2f3542] text-white">
-      <div className="border-b border-white/10 px-4 py-5">
+    <aside className="flex w-56 shrink-0 flex-col overflow-hidden border-r border-surface bg-[#2f3542] text-white">
+      <div className="shrink-0 border-b border-white/10 px-4 py-5">
         <Link
           href="/admin"
           className="inline-flex items-center gap-2 text-lg font-bold text-brand"
@@ -47,7 +47,7 @@ export function AdminSidebar() {
         </Link>
         <p className="mt-1 text-xs text-white/60">Admin CMS</p>
       </div>
-      <nav className="flex flex-1 flex-col gap-1 p-3">
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain p-3">
         {links.map(({ href, label, Icon }) => (
           <Link key={href} href={href} className={linkClass}>
             <Icon className={iconClass} aria-hidden />
@@ -55,7 +55,7 @@ export function AdminSidebar() {
           </Link>
         ))}
       </nav>
-      <div className="border-t border-white/10 p-3">
+      <div className="shrink-0 border-t border-white/10 p-3">
         <LogoutButton
           withIcon
           className="text-sm text-white/80 hover:text-white"

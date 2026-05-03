@@ -21,7 +21,7 @@ const carSchema = z.object({
   price: z.coerce.number().positive(),
   description: z.string().min(1).max(20000),
   categoryId: z.string().min(1),
-  status: z.enum(["LISTED", "SOLD"]),
+  status: z.enum(["LISTED", "SOLD", "INACTIVE"]),
 });
 
 function readCarForm(formData: FormData) {

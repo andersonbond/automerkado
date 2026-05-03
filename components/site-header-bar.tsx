@@ -7,13 +7,11 @@ import {
   Car,
   CircleHelp,
   Info,
-  LogIn,
   Mail,
   Menu,
   Newspaper,
   Shield,
   User,
-  UserPlus,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -144,7 +142,6 @@ export function SiteHeaderBar({
               linkClassName={mobileLinkClass}
               iconClassName="h-5 w-5 shrink-0 opacity-80"
               onNavigate={close}
-              registerClassName="mx-2 mt-2 inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-3 py-3 text-base font-semibold text-brand-foreground hover:opacity-95"
             />
           </nav>
         </>
@@ -159,19 +156,13 @@ function NavLinks({
   linkClassName,
   iconClassName,
   onNavigate,
-  registerClassName,
 }: {
   isAuthenticated: boolean;
   isAdmin: boolean;
   linkClassName: string;
   iconClassName: string;
   onNavigate?: () => void;
-  registerClassName?: string;
 }) {
-  const regClass =
-    registerClassName ??
-    "inline-flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-brand-foreground hover:opacity-95";
-
   return (
     <>
       {mainNav.map(({ href, label, Icon }) => (
@@ -212,18 +203,7 @@ function NavLinks({
             }
           />
         </>
-      ) : (
-        <>
-          <Link href="/login" className={linkClassName} onClick={onNavigate}>
-            <LogIn className={iconClassName} aria-hidden />
-            Log in
-          </Link>
-          <Link href="/register" className={regClass} onClick={onNavigate}>
-            <UserPlus className="h-5 w-5 shrink-0" aria-hidden />
-            Register
-          </Link>
-        </>
-      )}
+      ) : null}
     </>
   );
 }

@@ -97,3 +97,47 @@ export async function getCarBySlug(slug: string) {
     },
   });
 }
+
+/** Admin listing: all statuses, optional text search. */
+export const ADMIN_CARS_PAGE_SIZE = 50;
+
+function buildAdminCarSearchWhere(q?: string): Prisma.CarWhereInput {
+  const trimmed = q?.trim();
+  if (!trimmed) return {};
+  return {
+    OR: [
+      { title: { contains: trimmed } },
+      { brand: { contains: trimmed } },
+      { model: { contains: trimmed } },
+      { slug: { contains: trimmed } },
+    ],
+  };
+}
+
+const adminCarListInclude = {
+  category: true,
+  images: { orderBy: { sortOrder: "asc" as const }, take: 1 },
+} satisfies Prisma.CarInclude;
+
+export type AdminCarListItem = Prisma.CarGetPayload<{
+  include: typeof adminCarListInclude;
+}>;
+
+export async function countAdminCars(q?: string) {
+  return prisma.car.count({ where: buildAdminCarSearchWhere(q) });
+}
+
+export async function listAdminCars(params: {
+  q?: string;
+  skip: number;
+  take: number;
+}): Promise<AdminCarListItem[]> {
+  const { q, skip, take } = params;
+  return prisma.car.findMany({
+    where: buildAdminCarSearchWhere(q),
+    orderBy: { updatedAt: "desc" },
+    skip,
+    take,
+    include: adminCarListInclude,
+  });
+}
