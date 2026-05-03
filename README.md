@@ -73,17 +73,18 @@ When a user places a valid bid, the app attempts to send email via SMTP. If `SMT
 | `npm run start`    | Start production server    |
 | `npm run lint`     | ESLint                     |
 | `npm run db:migrate` | `prisma migrate dev`     |
-| `npm run db:seed`  | Run `prisma/seed.ts`       |
+| `npm run db:seed`  | Run `scripts/seed.ts`      |
 | `npm run db:reset` | Reset DB + migrate + seed  |
 
 ## Project layout
 
+- `scripts/` — Database seed (`seed.ts`)
 - `app/(site)/` — Public marketing + listings + auth pages
 - `app/admin/` — Admin CMS (protected by middleware + role)
 - `app/api/` — Route handlers (bids, inspections, register)
 - `lib/actions/` — Server actions for admin mutations
 - `lib/services/`, `lib/repositories/`, `lib/controllers/` — Layered domain logic
-- `prisma/` — Schema, migrations, seed
+- `prisma/` — Schema and migrations (`scripts/seed.ts` seeds the DB)
 
 ## Bidding rules
 

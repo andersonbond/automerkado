@@ -238,6 +238,7 @@ const CARS: SeedCar[] = [
 async function main() {
   await prisma.bid.deleteMany();
   await prisma.inspectionRequest.deleteMany();
+  await prisma.carInquiry.deleteMany();
   await prisma.carImage.deleteMany();
   await prisma.fileAsset.deleteMany();
   await prisma.car.deleteMany();
