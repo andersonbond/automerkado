@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "Admin",
 };
 
+/** Admin routes fetch live DB data — avoid static prerender during `next build`. */
+export const dynamic = "force-dynamic";
+
 export default function AdminLayout({
   children,
 }: {
