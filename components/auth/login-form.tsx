@@ -10,15 +10,17 @@ const inputClass =
 
 export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    const fd = new FormData(e.currentTarget);
+    const email = String(fd.get("email") ?? "").trim();
+    const password = String(fd.get("password") ?? "");
+
     setLoading(true);
     const res = await signIn("credentials", {
       email,
@@ -38,34 +40,40 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5">
+    <form
+      method="post"
+      autoComplete="on"
+      onSubmit={onSubmit}
+      className="flex flex-col gap-5"
+    >
       {error ? (
         <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-900 dark:border-red-500/30 dark:bg-red-950/50 dark:text-red-100">
           {error}
         </p>
       ) : null}
-      <label className="block text-sm font-medium text-foreground">
-        Email
+      <div className="block text-sm font-medium text-foreground">
+        <label htmlFor="login-email">Email</label>
         <input
+          id="login-email"
+          name="email"
           type="email"
           required
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="username"
+          inputMode="email"
           className={inputClass}
         />
-      </label>
-      <label className="block text-sm font-medium text-foreground">
-        Password
+      </div>
+      <div className="block text-sm font-medium text-foreground">
+        <label htmlFor="login-password">Password</label>
         <input
+          id="login-password"
+          name="password"
           type="password"
           required
           autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
           className={inputClass}
         />
-      </label>
+      </div>
       <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground">
         <input
           type="checkbox"
