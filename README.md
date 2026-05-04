@@ -75,10 +75,22 @@ When a user places a valid bid, the app attempts to send email via SMTP. If `SMT
 | `npm run db:migrate` | `prisma migrate dev`     |
 | `npm run db:seed`  | Run `scripts/seed.ts`      |
 | `npm run db:reset` | Reset DB + migrate + seed  |
+| `npm run worker:repossessed-expiry` | Deactivate expired LISTED repossessed listings (scheduled worker) |
+
+### Repossessed listing expiry (production cron)
+
+Repossessed listings expire at **Wednesday 16:30** `Asia/Manila` per listing (same cutoff as the site countdown). Run the worker weekly so listings flip to inactive even when traffic is quiet. Use **`CRON_TZ=Asia/Manila`** so **16:30** is Manila wall time (GNU cron respects `CRON_TZ` per job).
+
+Example (Wednesdays 16:30 Manila):
+
+```cron
+CRON_TZ=Asia/Manila
+30 16 * * 3 cd /path/to/automerkado && npm run worker:repossessed-expiry
+```
 
 ## Project layout
 
-- `scripts/` — Database seed (`seed.ts`)
+- `scripts/` — Database seed (`seed.ts`), repossessed expiry worker (`repossessed-expiry-worker.ts`)
 - `app/(site)/` — Public marketing + listings + auth pages
 - `app/admin/` — Admin CMS (protected by middleware + role)
 - `app/api/` — Route handlers (bids, inspections, register)

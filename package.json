@@ -11,7 +11,8 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx scripts/seed.ts",
-    "db:reset": "prisma migrate reset --force"
+    "db:reset": "prisma migrate reset --force",
+    "worker:repossessed-expiry": "tsx scripts/repossessed-expiry-worker.ts"
   },
   "prisma": {
     "seed": "tsx scripts/seed.ts"
