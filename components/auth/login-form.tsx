@@ -88,7 +88,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
       <button
         type="submit"
         disabled={loading}
-        className="mt-1 inline-flex min-h-11 items-center justify-center rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground transition-opacity disabled:opacity-60"
+        className="mt-1 inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-brand-foreground transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Signing in…" : "Sign in"}
       </button>

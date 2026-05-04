@@ -117,10 +117,10 @@ export default async function HomePage() {
                 </div>
                 <button
                   type="submit"
-                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-xl bg-brand px-6 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-95 active:opacity-90 sm:min-h-12"
+                  className="cursor-pointer inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-brand px-6 text-sm font-semibold text-brand-foreground transition-opacity hover:opacity-95 active:opacity-90 sm:min-h-12"
                 >
+                  <Search className="h-4 w-4 opacity-95" aria-hidden />
                   Search
-                  <ChevronRight className="h-4 w-4 opacity-90" aria-hidden />
                 </button>
               </form>
             </div>
