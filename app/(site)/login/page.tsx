@@ -31,7 +31,7 @@ export default async function LoginPage({
       <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground">
         Sign in
       </h1>
-      <p className="mt-2 text-sm text-muted">
+      {/* <p className="mt-2 text-sm text-muted">
         New here?{" "}
         <Link
           href="/register"
@@ -39,7 +39,7 @@ export default async function LoginPage({
         >
           Create an account
         </Link>
-      </p>
+      </p> */}
       <div className="mt-8 rounded-2xl border border-border bg-card p-8 shadow-card">
         <LoginForm callbackUrl={safeCallback} />
       </div>

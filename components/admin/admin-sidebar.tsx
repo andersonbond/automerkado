@@ -2,7 +2,6 @@ import NextImage from "next/image";
 import Link from "next/link";
 import {
   Car,
-  ClipboardList,
   ExternalLink,
   FolderOpen,
   Image,
@@ -18,7 +17,6 @@ const links = [
   { href: "/admin/inquiries", label: "Inquiries", Icon: Inbox },
   { href: "/admin/images", label: "Images", Icon: Image },
   { href: "/admin/files", label: "Files", Icon: FolderOpen },
-  { href: "/admin/inspections", label: "Inspections", Icon: ClipboardList },
   { href: "/admin/settings", label: "Settings", Icon: Settings },
 ] as const;
 

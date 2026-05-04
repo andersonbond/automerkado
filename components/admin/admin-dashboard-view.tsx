@@ -4,8 +4,8 @@ import {
   BadgeCheck,
   BarChart3,
   Car,
-  ClipboardCheck,
   Gavel,
+  ImageIcon,
   Inbox,
   Megaphone,
   Sparkles,
@@ -32,9 +32,7 @@ function formatShortDate(iso: Date | string): string {
 }
 
 export function AdminDashboardView({ analytics: a }: { analytics: DashboardAnalytics }) {
-  const attention =
-    (a.pendingInspections > 0 ? 1 : 0) +
-    (a.carsManualBidClosed > 0 ? 1 : 0);
+  const attention = a.carsManualBidClosed > 0 ? 1 : 0;
 
   const headerDate = new Intl.DateTimeFormat("en-PH", {
     weekday: "long",
@@ -144,11 +142,11 @@ export function AdminDashboardView({ analytics: a }: { analytics: DashboardAnaly
                 tint="accent"
               />
               <MetricTile
-                icon={ClipboardCheck}
-                label="Inspections pending"
-                value={a.pendingInspections}
-                subtitle={a.pendingInspections ? "Resolve in queue" : "Queue clear ✓"}
-                tint={a.pendingInspections ? "amber" : "neutral"}
+                icon={Car}
+                label="Live listings"
+                value={a.listedCars}
+                subtitle={`${a.totalCars} in CMS total`}
+                tint="neutral"
               />
             </div>
           </div>
@@ -208,10 +206,10 @@ export function AdminDashboardView({ analytics: a }: { analytics: DashboardAnaly
                 description="Requests & bids from listings"
               />
               <QuickLinkCard
-                href="/admin/inspections"
-                icon={ClipboardCheck}
-                title="Inspections"
-                description="Approve or reschedule"
+                href="/admin/images"
+                icon={ImageIcon}
+                title="Images"
+                description="Library & listing photos"
               />
             </div>
           </div>
@@ -233,8 +231,8 @@ export function AdminDashboardView({ analytics: a }: { analytics: DashboardAnaly
             </p>
             {attention ? (
               <p className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50/90 px-3 py-3 text-xs font-medium leading-relaxed text-amber-950 ring-1 ring-amber-100">
-                Heads up · you have actionable items ({attention} buckets). Clear pending
-                inspections or review manual bidding locks.
+                Heads up · you have actionable items ({attention} buckets). Review manual
+                bidding locks on affected listings.
               </p>
             ) : (
               <p className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-3 text-xs font-medium leading-relaxed text-emerald-950 ring-1 ring-emerald-100/80">

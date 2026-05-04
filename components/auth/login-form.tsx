@@ -83,10 +83,6 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
         />
         <span>
           <span className="font-medium">Remember me</span>
-          <span className="mt-0.5 block text-xs font-normal text-muted">
-            Stay signed in on this device for up to 30 days. Uncheck to sign out
-            after 12 hours of inactivity.
-          </span>
         </span>
       </label>
       <button
