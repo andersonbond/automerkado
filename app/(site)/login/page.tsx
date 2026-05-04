@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { LoginForm } from "@/components/auth/login-form";
+import { postLoginDestination, sanitizeRelativeCallbackUrl } from "@/lib/authRedirects";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -14,10 +15,13 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ callbackUrl?: string }>;
 }) {
-  const session = await auth();
-  if (session?.user) redirect("/");
-
   const { callbackUrl } = await searchParams;
+  const safeCallback = sanitizeRelativeCallbackUrl(callbackUrl);
+
+  const session = await auth();
+  if (session?.user) {
+    redirect(postLoginDestination(safeCallback, session.user.role));
+  }
 
   return (
     <div className="mx-auto flex min-h-[72vh] max-w-md flex-col justify-center px-4 py-16 sm:px-6">
@@ -37,7 +41,7 @@ export default async function LoginPage({
         </Link>
       </p>
       <div className="mt-8 rounded-2xl border border-border bg-card p-8 shadow-card">
-        <LoginForm callbackUrl={callbackUrl ?? "/"} />
+        <LoginForm callbackUrl={safeCallback} />
       </div>
     </div>
   );

@@ -1,8 +1,9 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { postLoginDestination } from "@/lib/authRedirects";
 
 const inputClass =
   "mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-shadow focus-visible:border-brand/40 focus-visible:ring-2 focus-visible:ring-brand/20";
@@ -30,7 +31,9 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
       setError("Invalid email or password.");
       return;
     }
-    router.push(callbackUrl);
+    const session = await getSession();
+    const destination = postLoginDestination(callbackUrl, session?.user?.role);
+    router.push(destination);
     router.refresh();
   }
 

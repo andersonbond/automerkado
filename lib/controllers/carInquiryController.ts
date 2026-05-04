@@ -6,6 +6,7 @@ import {
   REPOSSESSED_CATEGORY_SLUG,
 } from "@/lib/carListingCategories";
 import { prisma } from "@/lib/db";
+import { effectiveHighBidDecimal } from "@/lib/services/effectiveListingBid";
 
 const MOBILE = z
   .string()
@@ -60,7 +61,6 @@ export async function postCarInquiryHandler(carId: string, body: unknown) {
     where: { id: carId, status: "LISTED" },
     include: {
       category: true,
-      bids: { orderBy: { amount: "desc" }, take: 1, select: { amount: true } },
     },
   });
 
@@ -137,7 +137,7 @@ export async function postCarInquiryHandler(carId: string, body: unknown) {
     };
   }
 
-  const high = car.bids[0]?.amount;
+  const high = await effectiveHighBidDecimal(car.id);
   const MIN_INC = new Prisma.Decimal(1000);
   const minNext = high ? high.add(MIN_INC) : new Prisma.Decimal(car.price);
 

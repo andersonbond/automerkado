@@ -39,10 +39,10 @@ const sheetIconClass = "h-5 w-5 shrink-0 text-brand/90";
 const mainNav = [
   { href: "/listings/certified", label: "Certified", Icon: BadgeCheck },
   { href: "/listings/repossessed", label: "Repossessed", Icon: Car },
+  { href: "/contact", label: "Contact", Icon: Phone },
   { href: "/faq", label: "FAQ", Icon: CircleHelp },
   { href: "/about", label: "About", Icon: Info },
   { href: "/blog", label: "Blog", Icon: Newspaper },
-  { href: "/contact", label: "Contact", Icon: Phone },
 ] as const;
 
 export function SiteHeaderBar({

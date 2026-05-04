@@ -10,8 +10,9 @@ import {
   CERTIFIED_CATEGORY_SLUG,
   REPOSSESSED_CATEGORY_SLUG,
 } from "@/lib/carListingCategories";
-import { getRepossessedListingExpiresAtIso } from "@/lib/repossessedListing";
+import { effectiveHighBidDecimal } from "@/lib/services/effectiveListingBid";
 import { getCarBySlug } from "@/lib/repositories/carRepository";
+import { getRepossessedListingExpiresAtIso } from "@/lib/repossessedListing";
 import { absoluteUrl } from "@/lib/site";
 import { Prisma } from "@prisma/client";
 
@@ -64,11 +65,46 @@ export default async function CarDetailPage({ params }: Props) {
   const car = await getCarBySlug(slug);
   if (!car) notFound();
 
-  const high = car.bids[0]?.amount ?? new Prisma.Decimal(0);
-  const minNext = car.bids.length
-    ? high.add(new Prisma.Decimal(1000))
-    : new Prisma.Decimal(car.price);
-  const minBidHint = moneyPhp(minNext.toNumber());
+  const isRepo = car.category.slug === REPOSSESSED_CATEGORY_SLUG;
+  const highBid = isRepo ? await effectiveHighBidDecimal(car.id) : null;
+  const minNext = isRepo
+    ? highBid
+      ? highBid.add(new Prisma.Decimal(1000))
+      : new Prisma.Decimal(car.price)
+    : new Prisma.Decimal(0);
+  const minBidHint = isRepo ? moneyPhp(minNext.toNumber()) : "";
+
+  const bidHistoryFmt = new Intl.DateTimeFormat("en-PH", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  type BidHistoryRow = {
+    key: string;
+    sortAt: number;
+    amountLabel: string;
+    meta: string;
+    source: "account" | "form";
+  };
+
+  const bidHistoryRows: BidHistoryRow[] = isRepo
+    ? [
+        ...car.bids.map((b) => ({
+          key: `bid-${b.id}`,
+          sortAt: b.createdAt.getTime(),
+          amountLabel: moneyPhp(b.amount.toNumber()),
+          meta: `${b.user.name ?? "Bidder"} · ${bidHistoryFmt.format(b.createdAt)}`,
+          source: "account" as const,
+        })),
+        ...car.inquiries.map((i) => ({
+          key: `inq-${i.id}`,
+          sortAt: i.createdAt.getTime(),
+          amountLabel: moneyPhp(i.bidAmount!.toNumber()),
+          meta: `${i.firstName} · ${bidHistoryFmt.format(i.createdAt)}`,
+          source: "form" as const,
+        })),
+      ].sort((a, b) => b.sortAt - a.sortAt)
+    : [];
 
   const weeklyOpen = isWeeklyBiddingOpen();
   const canonical = absoluteUrl(`/listings/${car.slug}`);
@@ -185,7 +221,7 @@ export default async function CarDetailPage({ params }: Props) {
         </span>
         {car.category.slug === REPOSSESSED_CATEGORY_SLUG ? (
           <span className="inline-flex rounded-full border border-border bg-card px-3 py-1 font-medium text-foreground shadow-sm">
-            High bid {car.bids.length ? moneyPhp(high.toNumber()) : "—"}
+            High bid {highBid ? moneyPhp(highBid.toNumber()) : "—"}
           </span>
         ) : null}
         {showLeadFormJump ? (
@@ -236,27 +272,36 @@ export default async function CarDetailPage({ params }: Props) {
               <h2 className="text-lg font-bold tracking-tight text-foreground">
                 Bid history
               </h2>
+              <p className="mt-2 max-w-xl text-sm text-muted">
+                Newest activity first · includes signed-in bids and bid-form submissions.
+              </p>
               <ul className="mt-4 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card shadow-card">
-                {car.bids.length === 0 ? (
+                {bidHistoryRows.length === 0 ? (
                   <li className="px-4 py-8 text-center text-sm text-muted">
-                    No bids yet.
+                    No bids yet. Submit an offer using the form — it will appear here after
+                    you send it.
                   </li>
                 ) : (
-                  car.bids.map((b) => (
+                  bidHistoryRows.map((row) => (
                     <li
-                      key={b.id}
-                      className="flex flex-wrap items-center justify-between gap-2 px-4 py-3.5 text-sm"
+                      key={row.key}
+                      className="flex flex-col gap-2 px-4 py-3.5 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3"
                     >
-                      <span className="font-medium text-foreground">
-                        {moneyPhp(b.amount.toNumber())}
-                      </span>
-                      <span className="text-muted">
-                        {b.user.name ?? "Bidder"} ·{" "}
-                        {new Intl.DateTimeFormat("en-PH", {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        }).format(b.createdAt)}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-lg font-semibold tabular-nums text-foreground">
+                          {row.amountLabel}
+                        </span>
+                        <span
+                          className={
+                            row.source === "account"
+                              ? "inline-flex shrink-0 rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand ring-1 ring-brand/15"
+                              : "inline-flex shrink-0 rounded-full bg-surface px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted ring-1 ring-border"
+                          }
+                        >
+                          {row.source === "account" ? "Account bid" : "Bid form"}
+                        </span>
+                      </div>
+                      <span className="text-muted sm:text-right">{row.meta}</span>
                     </li>
                   ))
                 )}

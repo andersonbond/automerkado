@@ -15,10 +15,10 @@ import { LogoutButton } from "@/components/logout-button";
 const links = [
   { href: "/admin", label: "Dashboard", Icon: LayoutDashboard },
   { href: "/admin/cars", label: "Cars", Icon: Car },
+  { href: "/admin/inquiries", label: "Inquiries", Icon: Inbox },
   { href: "/admin/images", label: "Images", Icon: Image },
   { href: "/admin/files", label: "Files", Icon: FolderOpen },
   { href: "/admin/inspections", label: "Inspections", Icon: ClipboardList },
-  { href: "/admin/inquiries", label: "Inquiries", Icon: Inbox },
   { href: "/admin/settings", label: "Settings", Icon: Settings },
 ] as const;
 
@@ -47,7 +47,7 @@ export function AdminSidebar() {
           </span>
           Automerkado
         </Link>
-        <p className="mt-1 text-xs text-white/60">Admin CMS</p>
+        <p className="mt-1 text-xs text-white/60">Car Management System</p>
       </div>
       <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain p-3">
         {links.map(({ href, label, Icon }) => (

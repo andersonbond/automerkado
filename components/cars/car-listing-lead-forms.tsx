@@ -1,6 +1,7 @@
 "use client";
 
 import { formatPhpPriceInput } from "@/components/admin/php-formatted-price-input";
+import { Gavel } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
@@ -349,8 +350,9 @@ export function RepossessedBidLeadForm({
           loading ||
           bidBelowMin
         }
-        className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-brand px-5 text-sm font-semibold text-brand-foreground disabled:opacity-50"
+        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 text-sm font-semibold text-brand-foreground disabled:opacity-50"
       >
+        <Gavel className="h-4 w-4 shrink-0" aria-hidden strokeWidth={2} />
         {loading ? "Submitting…" : "Submit Bid"}
       </button>
     </form>

@@ -113,6 +113,20 @@ export async function getCarBySlug(slug: string) {
         take: 50,
         include: { user: { select: { name: true, email: true } } },
       },
+      inquiries: {
+        where: {
+          kind: "REPOSSESSED_BID",
+          bidAmount: { not: null },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: {
+          id: true,
+          firstName: true,
+          bidAmount: true,
+          createdAt: true,
+        },
+      },
     },
   });
 }

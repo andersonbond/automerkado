@@ -3,6 +3,7 @@ import { isWeeklyBiddingOpen } from "@/lib/bidding/weeklyClose";
 import { sendBidConfirmationEmail } from "@/lib/mail/sendBidConfirmation";
 import { prisma } from "@/lib/db";
 import { deactivateExpiredRepossessedListings } from "@/lib/services/repossessedExpiry";
+import { effectiveHighBidDecimal } from "@/lib/services/effectiveListingBid";
 
 const MIN_INCREMENT = new Prisma.Decimal(1000);
 
@@ -53,9 +54,6 @@ export async function placeBid(params: {
 
   const car = await prisma.car.findUnique({
     where: { id: carId },
-    include: {
-      bids: { orderBy: { amount: "desc" }, take: 1 },
-    },
   });
 
   if (!car || car.status !== "LISTED") {
@@ -73,7 +71,7 @@ export async function placeBid(params: {
     );
   }
 
-  const high = car.bids[0]?.amount;
+  const high = await effectiveHighBidDecimal(car.id);
   const minNext = high
     ? high.add(MIN_INCREMENT)
     : new Prisma.Decimal(car.price);
