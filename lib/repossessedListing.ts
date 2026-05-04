@@ -14,24 +14,25 @@ function startOfMondayWeek(dt: DateTime): DateTime {
 }
 
 /**
- * Repossessed + Active listings expire on Wednesday 16:30 Manila of the **calendar week after**
- * the week that contains `createdAt` (Monday-start weeks).
+ * Repossessed + Active listings expire at Wednesday 16:30 Asia/Manila in the **same**
+ * Monday-start week as `createdAt`, unless that cutoff has already passed — then the
+ * following Wednesday 16:30.
  *
- * Example: listed Friday → inactive the following week's Wednesday after 4:30 PM (that Wednesday instant).
+ * Example: listed Monday → visibility ends that week's Wednesday after 4:30 PM.
  */
 export function getRepossessedListingExpiresAt(createdAt: Date): Date {
   const dt = DateTime.fromJSDate(createdAt).setZone(TZ);
   const monday = startOfMondayWeek(dt);
-  const nextWednesday = monday
-    .plus({ weeks: 1 })
-    .plus({ days: 2 })
-    .set({
-      hour: CUT_HOUR,
-      minute: CUT_MINUTE,
-      second: 0,
-      millisecond: 0,
-    });
-  return nextWednesday.toJSDate();
+  let wedCutoff = monday.plus({ days: 2 }).set({
+    hour: CUT_HOUR,
+    minute: CUT_MINUTE,
+    second: 0,
+    millisecond: 0,
+  });
+  if (dt > wedCutoff) {
+    wedCutoff = wedCutoff.plus({ weeks: 1 });
+  }
+  return wedCutoff.toJSDate();
 }
 
 /** ISO timestamp for client countdowns; null when not a repossessed listing window. */

@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { POPULAR_CAR_BRANDS } from "@/lib/carBrands";
+import { OfficeLocationSection } from "@/components/landing/office-location-section";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
 import { RepossessedListingCountdownCard } from "@/components/listings/repossessed-listing-countdown";
 import {
@@ -261,6 +262,8 @@ export default async function HomePage() {
       </section>
 
       <TestimonialsSection />
+
+      <OfficeLocationSection />
     </div>
   );
 }

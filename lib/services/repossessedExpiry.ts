@@ -6,7 +6,7 @@ import {
 
 /**
  * Marks expired repossessed LISTED cars as INACTIVE so they drop off public listings.
- * Expiry follows {@link getRepossessedListingExpiresAt} (Wednesday 16:30 Manila, week after listing week).
+ * Expiry follows {@link getRepossessedListingExpiresAt} (Wednesday 16:30 Manila in-listing-week, or next week if past cutoff).
  * Safe to call frequently (idempotent).
  */
 export async function deactivateExpiredRepossessedListings(now = new Date()) {
