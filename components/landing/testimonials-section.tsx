@@ -55,9 +55,6 @@ export function TestimonialsSection() {
     >
       <div className="mt-8 sm:mt-10 md:mt-11">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted">
-            Testimonials
-          </p>
           <h2
             id="testimonials-heading"
             className="mt-2 text-2xl font-bold tracking-tight text-foreground sm:text-3xl"

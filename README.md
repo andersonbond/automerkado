@@ -12,7 +12,7 @@ Production-oriented car marketplace with public listings, weekly bidding (Asia/M
 - Nodemailer (optional SMTP for bid confirmations)
 - Lucide (header / admin icons)
 
-Placeholder listing images live under **`public/car_images/`** (served as `/car_images/...`). The seed references `/car_images/IMG_01.webp`.
+Optional static assets can live under **`public/`** (e.g. **`public/car_images/`**). The seed creates **demo users**, **Certified** / **Repossessed** categories, and **no vehicles**—add inventory from **Admin → Cars**.
 
 ## Prerequisites
 
@@ -34,7 +34,7 @@ Placeholder listing images live under **`public/car_images/`** (served as `/car_
 
    Set `AUTH_SECRET` to a long random string (for example `openssl rand -base64 32`). Set `AUTH_URL` to your site origin (e.g. `http://localhost:3000` in development).
 
-3. Create / migrate the database and seed demo data:
+3. Create / migrate the database and seed bootstrap accounts and categories:
 
    ```bash
    npx prisma migrate dev

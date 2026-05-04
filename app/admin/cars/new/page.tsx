@@ -218,7 +218,7 @@ export default async function NewCarPage({
               <SectionHeading
                 icon={ImagePlus}
                 title="Photos"
-                subtitle="Optional — we use a placeholder if you skip this."
+                subtitle="Optional — add at least one photo so listings show a proper image."
               />
               <CarImagesFilePicker />
             </div>

@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { POPULAR_CAR_BRANDS } from "@/lib/carBrands";
+import { ListingPhotoPlaceholder } from "@/components/cars/listing-photo-placeholder";
 import { OfficeLocationSection } from "@/components/landing/office-location-section";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
 import { RepossessedListingCountdownCard } from "@/components/listings/repossessed-listing-countdown";
@@ -189,9 +190,18 @@ export default async function HomePage() {
             <ChevronRight className="h-4 w-4" aria-hidden />
           </Link>
         </div>
+        {featured.length === 0 ? (
+          <div className="mt-5 rounded-2xl border border-dashed border-border bg-card/60 px-6 py-14 text-center sm:mt-8">
+            <p className="text-base font-semibold text-foreground">Inventory coming soon</p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+              New listings will appear here as they are published. Use the search above or
+              browse certified and repossessed inventory.
+            </p>
+          </div>
+        ) : (
         <ul className="mt-5 grid gap-4 sm:mt-8 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-6">
           {featured.map((car) => {
-            const img = car.images[0]?.path ?? "/car_images/IMG_01.webp";
+            const firstIm = car.images[0];
             const high = car.bids[0]?.amount ?? car.price;
             const expiresIso = getRepossessedListingExpiresAtIso(
               car.category.slug,
@@ -205,14 +215,18 @@ export default async function HomePage() {
                     className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     <div className="relative aspect-[16/10] overflow-hidden bg-surface">
-                      <Image
-                        src={img}
-                        alt={car.title}
-                        fill
-                        unoptimized={isPublicUploadPath(img)}
-                        className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                      />
+                      {firstIm?.path ? (
+                        <Image
+                          src={firstIm.path}
+                          alt={firstIm.alt ?? car.title}
+                          fill
+                          unoptimized={isPublicUploadPath(firstIm.path)}
+                          className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
+                      ) : (
+                        <ListingPhotoPlaceholder className="absolute inset-0" />
+                      )}
                     </div>
                     <div className="p-5 pb-3">
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
@@ -250,6 +264,7 @@ export default async function HomePage() {
             );
           })}
         </ul>
+        )}
         <div className="mt-10 flex justify-center border-t border-border pt-7 pb-4 sm:pt-8 sm:pb-6">
           <Link
             href="/listings/certified"

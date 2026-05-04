@@ -35,8 +35,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const desc = `${car.year} ${car.brand} ${car.model}. ${car.description.slice(0, 140)}${car.description.length > 140 ? "…" : ""}`;
   const canonical = absoluteUrl(`/listings/${car.slug}`);
-  const imageRel = car.images[0]?.path ?? "/car_images/IMG_01.webp";
-  const ogImage = absoluteUrl(imageRel);
+  const first = car.images[0];
+  const ogImages = first
+    ? [{ url: absoluteUrl(first.path), alt: first.alt ?? car.title }]
+    : [{ url: absoluteUrl("/logo.svg"), alt: "Automerkado" }];
 
   return {
     title: car.title,
@@ -49,13 +51,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       locale: "en_PH",
       siteName: "Automerkado",
       type: "website",
-      images: [{ url: ogImage, alt: car.images[0]?.alt ?? car.title }],
+      images: ogImages,
     },
     twitter: {
-      card: "summary_large_image",
+      card: first ? "summary_large_image" : "summary",
       title: car.title,
       description: desc,
-      images: [ogImage],
+      images: ogImages.map((i) => i.url),
     },
   };
 }
@@ -111,7 +113,7 @@ export default async function CarDetailPage({ params }: Props) {
   const imageUrls =
     car.images.length > 0
       ? car.images.map((im) => absoluteUrl(im.path))
-      : [absoluteUrl("/car_images/IMG_01.webp")];
+      : [absoluteUrl("/logo.svg")];
 
   const productLd = {
     "@context": "https://schema.org",

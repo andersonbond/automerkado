@@ -100,17 +100,6 @@ export async function createCarAction(formData: FormData) {
     });
   }
 
-  if (order === 0) {
-    await prisma.carImage.create({
-      data: {
-        carId: car.id,
-        path: "/car_images/IMG_01.webp",
-        sortOrder: 0,
-        alt: data.title,
-      },
-    });
-  }
-
   await syncCarTags(car.id, String(formData.get("tags") ?? ""));
 
   revalidatePath("/");

@@ -8,7 +8,7 @@ export function OfficeLocationSection() {
 
   return (
     <section
-      className="border-t border-border bg-surface/[0.35] py-12 sm:py-14 md:py-16"
+      className=" bg-surface/[0.35] py-12 sm:py-14 md:py-16"
       aria-labelledby="office-location-heading"
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useCallback, useEffect, useId, useState } from "react";
+import { ListingPhotoPlaceholder } from "@/components/cars/listing-photo-placeholder";
 import { isPublicUploadPath } from "@/lib/nextImage";
 
 export type CarGalleryImage = {
@@ -74,14 +75,10 @@ export function CarListingGallery({
   if (!primary) {
     return (
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
-        <Image
-          src="/car_images/IMG_01.webp"
-          alt={fallbackAlt}
-          fill
-          className="object-cover"
-          sizes={heroSizes}
-          priority
-        />
+        <ListingPhotoPlaceholder className="absolute inset-0" />
+        <p className="absolute bottom-3 left-0 right-0 px-4 text-center text-xs font-medium text-muted">
+          Photos coming soon
+        </p>
       </div>
     );
   }

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ListingPhotoPlaceholder } from "@/components/cars/listing-photo-placeholder";
 import type { Prisma } from "@prisma/client";
 import { RepossessedListingCountdownCard } from "@/components/listings/repossessed-listing-countdown";
 import { getRepossessedListingExpiresAtIso } from "@/lib/repossessedListing";
@@ -41,7 +42,7 @@ export function CarGrid({
   return (
     <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {cars.map((car) => {
-        const img = car.images[0]?.path ?? "/car_images/IMG_01.webp";
+        const firstIm = car.images[0];
         const high = car.bids[0]?.amount ?? car.price;
         const expiresIso = getRepossessedListingExpiresAtIso(
           car.category.slug,
@@ -55,14 +56,18 @@ export function CarGrid({
                 className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <div className="relative aspect-[16/10] overflow-hidden bg-surface">
-                  <Image
-                    src={img}
-                    alt={car.images[0]?.alt ?? car.title}
-                    fill
-                    unoptimized={isPublicUploadPath(img)}
-                    className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  />
+                  {firstIm?.path ? (
+                    <Image
+                      src={firstIm.path}
+                      alt={firstIm.alt ?? car.title}
+                      fill
+                      unoptimized={isPublicUploadPath(firstIm.path)}
+                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                  ) : (
+                    <ListingPhotoPlaceholder className="absolute inset-0" />
+                  )}
                 </div>
                 <div className="p-5 pb-3">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">
