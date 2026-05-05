@@ -19,7 +19,7 @@ export type DashboardAnalytics = {
   siteStorageUploadBytes: number;
   /** Upload bytes plus fixed system/runtime allowance (default 500 MB). */
   siteStorageUsedBytes: number;
-  /** Reference budget for the bar; `ADMIN_IMAGE_STORAGE_QUOTA_MB` (default 5 GB). */
+  /** Reference budget for the bar; `ADMIN_IMAGE_STORAGE_QUOTA_MB` (default 50 GB). */
   siteStorageQuotaBytes: number;
   totalUsers: number;
   activeUsers: number;

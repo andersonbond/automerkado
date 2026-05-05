@@ -43,10 +43,11 @@ export default async function EditCarPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; created?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
+  const created = sp.created === "1";
   const car = (await prisma.car.findUnique({
     where: { id },
     include: editCarPageInclude as unknown as Prisma.CarInclude,
@@ -104,6 +105,20 @@ export default async function EditCarPage({
           </div>
         </header>
 
+        {created ? (
+          <div
+            className="mt-6 flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-950 shadow-sm"
+            role="status"
+          >
+            <CheckCircle2
+              className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600"
+              aria-hidden
+            />
+            <p>
+              Listing created. Add or reorder photos below, then save when you&apos;re done.
+            </p>
+          </div>
+        ) : null}
         {err ? (
           <div
             className="mt-6 flex gap-3 rounded-xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-900 shadow-sm"

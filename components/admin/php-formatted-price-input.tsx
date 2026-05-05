@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Formats price as user types: thousands commas; optional decimals (max 2).
@@ -74,17 +74,39 @@ export function PhpFormattedPriceInput({
   const [display, setDisplay] = useState(initial.display);
   const [normalized, setNormalized] = useState(initial.normalized);
 
+  const visibleRef = useRef<HTMLInputElement>(null);
+  const hiddenRef = useRef<HTMLInputElement>(null);
+
+  /** Keep hidden `price` in sync with the visible field at submit (autofill/DOM-only changes bypass React state). */
+  useEffect(() => {
+    const visible = visibleRef.current;
+    const hidden = hiddenRef.current;
+    if (!visible || !hidden) return;
+    const form = visible.closest("form");
+    if (!form) return;
+
+    const syncHiddenFromVisible = () => {
+      const { normalized: n } = formatPhpPriceInput(visible.value ?? "");
+      hidden.value = n;
+    };
+
+    form.addEventListener("submit", syncHiddenFromVisible, true);
+    return () => form.removeEventListener("submit", syncHiddenFromVisible, true);
+  }, []);
+
   const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { display: d, normalized: n } = formatPhpPriceInput(e.target.value);
     setDisplay(d);
     setNormalized(n);
+    if (hiddenRef.current) hiddenRef.current.value = n;
   }, []);
 
   return (
     <>
-      <input type="hidden" name={name} value={normalized} readOnly />
+      <input type="hidden" name={name} ref={hiddenRef} value={normalized} readOnly />
       <input
         id={id}
+        ref={visibleRef}
         type="text"
         inputMode="decimal"
         autoComplete="off"

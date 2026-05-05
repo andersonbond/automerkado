@@ -47,11 +47,11 @@ export function systemFilesAllocationBytes(): number {
   return Math.round(mb * 1024 * 1024);
 }
 
-const DEFAULT_QUOTA_MB = 5 * 1024; /* 5 GB */
+const DEFAULT_QUOTA_MB = 50 * 1024; /* 50 GB */
 
 /**
  * Soft budget for the site storage bar on the admin dashboard (not enforced server-side).
- * Set `ADMIN_IMAGE_STORAGE_QUOTA_MB` (megabytes). Defaults to 5 GB (5120 MB).
+ * Set `ADMIN_IMAGE_STORAGE_QUOTA_MB` (megabytes). Defaults to 50 GB (51200 MB).
  */
 export function imageStorageQuotaBytes(): number {
   const raw = process.env.ADMIN_IMAGE_STORAGE_QUOTA_MB?.trim();

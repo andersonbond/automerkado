@@ -145,7 +145,8 @@ export async function createCarAction(formData: FormData) {
   revalidatePath("/listings/repossessed");
   revalidatePath(`/listings/${finalSlug}`);
   revalidatePath("/admin/cars");
-  redirect("/admin/cars");
+  revalidatePath(`/admin/cars/${car.id}/edit`);
+  redirect(`/admin/cars/${car.id}/edit?created=1`);
 }
 
 export async function updateCarAction(formData: FormData) {
