@@ -51,6 +51,15 @@ Optional static assets can live under **`public/`** (e.g. **`public/car_images/`
 
    Open [http://localhost:3000](http://localhost:3000).
 
+## Production / Linux server (git stays clean)
+
+- After `git pull`, install with **`npm ci`** — installs exactly what’s in **`package-lock.json`** and avoids surprise edits to that file from **`npm install`**.
+- Prefer updating dependencies on your dev machine, commit the lockfile, then on the server: `npm ci`, `npm run build`, restart the app (e.g. PM2).
+- **`prisma/prod.db`** is listed in `.gitignore`; keep production SQLite (and WAL sidecars) only on disk or backups, not in Git.
+- **`AUTOMERKADO_APP_ROOT`** (optional, in `.env`): absolute path to the repo root (directory that contains `public/` and `package.json`). Sets where listing images and uploads are **written** and is used by the **`/uploads/...`** handler so reads match writes if `process.cwd()` is wrong under PM2/systemd.
+- **Nginx**: if you serve `/uploads/` with `root` at the **repo** root, requests look for `./uploads/...` instead of **`./public/uploads/...`** and return 404. Prefer **`location / { proxy_pass http://127.0.0.1:3000; }`** for all traffic, **or** use `alias /home/.../automerkado/public/uploads/;` (with trailing slash rules) under `location ^~ /uploads/`.
+- **Cloudflare**: use a Cache Rule to **Bypass** cache for **`/uploads/*`** so stale HTML 404s are not reused for image URLs.
+
 ## Demo accounts (from seed)
 
 | Role  | Email                     | Password     |
@@ -71,6 +80,7 @@ When a user places a valid bid, the app attempts to send email via SMTP. If `SMT
 | `npm run dev`      | Development server         |
 | `npm run build`    | Production build           |
 | `npm run start`    | Start production server    |
+| `npm run install:ci` | Same as `npm ci` (use on servers after pull) |
 | `npm run lint`     | ESLint                     |
 | `npm run db:migrate` | `prisma migrate dev`     |
 | `npm run db:seed`  | Run `scripts/seed.ts`      |

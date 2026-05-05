@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { mkdir, readdir, unlink, writeFile } from "fs/promises";
 import path from "path";
+import { resolvePublicUploadsPath } from "@/lib/appDeployRoot";
 
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_IMAGE = 5 * 1024 * 1024;
@@ -37,7 +38,7 @@ export async function storeUploadedImage(file: File): Promise<string | null> {
   if (buf.length > MAX_IMAGE) return null;
   const name = randomBytes(16).toString("hex") + extForMime(file.type);
   const rel = `/uploads/images/${name}`;
-  const disk = path.join(process.cwd(), "public", "uploads", "images", name);
+  const disk = path.join(resolvePublicUploadsPath("images"), name);
   await mkdir(path.dirname(disk), { recursive: true });
   await writeFile(disk, buf);
   return rel;
@@ -49,7 +50,7 @@ export async function storeUploadedFile(file: File): Promise<string | null> {
   if (buf.length > MAX_FILE) return null;
   const name = randomBytes(16).toString("hex") + extForMime(file.type);
   const rel = `/uploads/files/${name}`;
-  const disk = path.join(process.cwd(), "public", "uploads", "files", name);
+  const disk = path.join(resolvePublicUploadsPath("files"), name);
   await mkdir(path.dirname(disk), { recursive: true });
   await writeFile(disk, buf);
   return rel;
@@ -67,14 +68,14 @@ export async function unlinkPublicUploadedFile(relPath: string): Promise<void> {
   if (!name || name.includes("/") || name.includes("..")) return;
   if (!/^[a-f0-9]{32}\.[a-z0-9]+$/i.test(name)) return;
 
-  const baseDir = path.resolve(process.cwd(), "public", "uploads", "files");
+  const baseDir = path.resolve(resolvePublicUploadsPath("files"));
   const resolved = path.resolve(baseDir, name);
   if (!resolved.startsWith(baseDir + path.sep) && resolved !== baseDir) return;
   await unlink(resolved).catch(() => {});
 }
 
 export async function deleteStoredHeroBackgroundFiles(): Promise<void> {
-  const dir = path.join(process.cwd(), "public", "uploads", "site");
+  const dir = resolvePublicUploadsPath("site");
   let names: string[];
   try {
     names = await readdir(dir);
@@ -113,7 +114,7 @@ export async function storeHeroBackground(file: File): Promise<string | null> {
   const ext = extForMime(mime);
   const filename = `hero-bg${ext}`;
   const rel = `/uploads/site/${filename}`;
-  const diskDir = path.join(process.cwd(), "public", "uploads", "site");
+  const diskDir = resolvePublicUploadsPath("site");
   await mkdir(diskDir, { recursive: true });
   await deleteStoredHeroBackgroundFiles();
   const disk = path.join(diskDir, filename);
@@ -122,7 +123,7 @@ export async function storeHeroBackground(file: File): Promise<string | null> {
 }
 
 export async function deleteStoredSiteLogoFiles(): Promise<void> {
-  const dir = path.join(process.cwd(), "public", "uploads", "site");
+  const dir = resolvePublicUploadsPath("site");
   let names: string[];
   try {
     names = await readdir(dir);
@@ -145,7 +146,7 @@ export async function storeSiteLogo(file: File): Promise<string | null> {
   const ext = extForMime(file.type);
   const filename = `site-logo${ext}`;
   const rel = `/uploads/site/${filename}`;
-  const diskDir = path.join(process.cwd(), "public", "uploads", "site");
+  const diskDir = resolvePublicUploadsPath("site");
   await mkdir(diskDir, { recursive: true });
   await deleteStoredSiteLogoFiles();
   const disk = path.join(diskDir, filename);

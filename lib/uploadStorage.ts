@@ -1,5 +1,6 @@
 import { readdir, stat } from "fs/promises";
 import path from "path";
+import { resolvePublicUploadsPath } from "@/lib/appDeployRoot";
 
 async function dirSizeBytes(absDir: string): Promise<number> {
   let total = 0;
@@ -21,10 +22,9 @@ async function dirSizeBytes(absDir: string): Promise<number> {
 
 /** Sum of listing images and site logo files under `public/uploads/images` and `public/uploads/site`. */
 export async function sumUploadImageStorageBytes(): Promise<number> {
-  const cwd = process.cwd();
   const roots = [
-    path.join(cwd, "public", "uploads", "images"),
-    path.join(cwd, "public", "uploads", "site"),
+    resolvePublicUploadsPath("images"),
+    resolvePublicUploadsPath("site"),
   ];
   let total = 0;
   for (const root of roots) {

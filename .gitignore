@@ -48,3 +48,9 @@ next-env.d.ts
 # user uploads (keep folder)
 /public/uploads/**
 !/public/uploads/.gitkeep
+
+# production / server (never commit runtime DB or editor–PM2 backups)
+prisma/prod.db
+prisma/*.db-wal
+prisma/*.db-shm
+*.bak
