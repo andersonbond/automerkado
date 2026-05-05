@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { BlogPostBody } from "@/components/blog/blog-post-body";
 import { prisma } from "@/lib/db";
+import { plainExcerptFromMarkdown } from "@/lib/markdownExcerpt";
 import { absoluteUrl } from "@/lib/site";
+import { getAbsoluteSiteLogoUrl } from "@/lib/siteLogo";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -12,9 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
   if (!post) return { title: "Not found", robots: { index: false, follow: false } };
 
-  const description =
-    post.body.replace(/\s+/g, " ").trim().slice(0, 160) ||
-    "Automerkado blog article.";
+  const description = plainExcerptFromMarkdown(post.body, 160);
   const canonical = absoluteUrl(`/blog/${post.slug}`);
 
   return {
@@ -46,12 +47,13 @@ export default async function BlogPostPage({ params }: Props) {
   });
   if (!post) notFound();
 
+  const publisherLogoUrl = await getAbsoluteSiteLogoUrl();
+
   const articleLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
-    description:
-      post.body.replace(/\s+/g, " ").trim().slice(0, 200) ?? post.title,
+    description: plainExcerptFromMarkdown(post.body, 200) || post.title,
     datePublished: post.publishedAt?.toISOString() ?? post.createdAt.toISOString(),
     dateModified: post.updatedAt.toISOString(),
     publisher: {
@@ -59,7 +61,7 @@ export default async function BlogPostPage({ params }: Props) {
       name: "Automerkado",
       logo: {
         "@type": "ImageObject",
-        url: absoluteUrl("/logo.jpeg"),
+        url: publisherLogoUrl,
       },
     },
     mainEntityOfPage: {
@@ -90,9 +92,7 @@ export default async function BlogPostPage({ params }: Props) {
         </p>
       ) : null}
       <div className="mt-10 rounded-2xl border border-border bg-card p-6 shadow-card sm:p-8">
-        <div className="whitespace-pre-wrap text-base leading-relaxed text-muted">
-          {post.body}
-        </div>
+        <BlogPostBody markdown={post.body} />
       </div>
     </article>
   );

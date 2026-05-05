@@ -1,9 +1,10 @@
 import { absoluteUrl, siteUrl } from "@/lib/site";
+import { getSiteLogoSrc } from "@/lib/siteLogo";
 
 /** Organization + WebSite with search action (hero search uses `q` on certified listings). */
-export function SiteJsonLd() {
+export async function SiteJsonLd() {
   const base = siteUrl();
-  const logo = absoluteUrl("/logo.jpeg");
+  const logo = absoluteUrl(await getSiteLogoSrc());
 
   const graph = [
     {

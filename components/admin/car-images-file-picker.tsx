@@ -1,6 +1,6 @@
 "use client";
 
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, Star } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const labelClass =
@@ -8,6 +8,7 @@ const labelClass =
 
 export function CarImagesFilePicker() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [featuredIndex, setFeaturedIndex] = useState(0);
   const urlsRef = useRef<string[]>([]);
 
   const revokeAll = useCallback(() => {
@@ -16,6 +17,14 @@ export function CarImagesFilePicker() {
   }, []);
 
   useEffect(() => () => revokeAll(), [revokeAll]);
+
+  useEffect(() => {
+    if (previewUrls.length === 0) {
+      setFeaturedIndex(0);
+      return;
+    }
+    setFeaturedIndex((prev) => Math.min(prev, previewUrls.length - 1));
+  }, [previewUrls.length]);
 
   function onChange(e: React.ChangeEvent<HTMLInputElement>) {
     revokeAll();
@@ -31,6 +40,7 @@ export function CarImagesFilePicker() {
       next.push(url);
     }
     setPreviewUrls(next);
+    setFeaturedIndex(0);
   }
 
   return (
@@ -56,23 +66,58 @@ export function CarImagesFilePicker() {
       </label>
 
       {previewUrls.length > 0 ? (
-        <div className="rounded-xl border border-surface/80 bg-surface/20 p-4">
-          <p className="mb-3 text-xs font-medium text-muted">
+        <fieldset className="rounded-xl border border-surface/80 bg-surface/20 p-4">
+          <legend className="px-0.5 text-xs font-semibold uppercase tracking-wider text-muted">
+            Featured photo
+          </legend>
+          <p className="mb-3 text-xs text-muted">
+            This image appears first on the listing, on cards, and in search results.
+          </p>
+          <p className="mb-3 text-xs font-medium text-foreground">
             Preview — {previewUrls.length}{" "}
             {previewUrls.length === 1 ? "image" : "images"} selected
           </p>
-          <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
-            {previewUrls.map((url) => (
-              <li
-                key={url}
-                className="relative aspect-square overflow-hidden rounded-lg border border-surface/90 bg-card shadow-sm"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element -- blob URLs */}
-                <img src={url} alt="" className="h-full w-full object-cover" />
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {previewUrls.map((url, i) => (
+              <li key={url}>
+                <label className="block cursor-pointer">
+                  <span
+                    className={`relative block overflow-hidden rounded-xl border-2 bg-card shadow-sm transition hover:border-brand/35 ${
+                      featuredIndex === i
+                        ? "border-brand ring-2 ring-brand/25"
+                        : "border-transparent"
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- blob URLs */}
+                    <img src={url} alt="" className="aspect-square w-full object-cover" />
+                    <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
+                      <Star
+                        className={`h-3 w-3 ${featuredIndex === i ? "fill-amber-300 text-amber-200" : "text-white/90"}`}
+                        aria-hidden
+                      />
+                      Featured
+                    </span>
+                    <input
+                      type="radio"
+                      name="featuredImageIndex"
+                      value={i}
+                      checked={featuredIndex === i}
+                      onChange={() => setFeaturedIndex(i)}
+                      className="sr-only"
+                    />
+                  </span>
+                  <span
+                    className={`mt-1.5 block text-center text-[11px] font-medium ${
+                      featuredIndex === i ? "text-brand" : "text-muted"
+                    }`}
+                  >
+                    {featuredIndex === i ? "Featured" : `Photo ${i + 1}`}
+                  </span>
+                </label>
               </li>
             ))}
           </ul>
-        </div>
+        </fieldset>
       ) : null}
     </div>
   );

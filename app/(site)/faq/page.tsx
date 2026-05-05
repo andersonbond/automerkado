@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { FAQ_ENTRIES } from "@/lib/faq-content";
 import { absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "FAQ · Bidding & inspections",
+  title: "FAQ · Bidding & account help",
   description:
-    "Frequently asked questions about Automerkado: weekly Manila bidding schedules, certified vs repossessed inventory, and inspection requests.",
+    "Frequently asked questions about Automerkado: Manila bidding schedules, certified vs repossessed inventory, inspections, account signup, privacy, and how to contact us.",
   alternates: { canonical: absoluteUrl("/faq") },
   openGraph: {
     title: "FAQ | Automerkado",
     description:
-      "Everything you need to know about bidding windows, listings, and vehicle inspections.",
+      "Bidding windows, inspections, registrations, Privacy policy, and support—everything in one place.",
     url: absoluteUrl("/faq"),
   },
 };
@@ -41,6 +42,21 @@ export default function FaqPage() {
       <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
         FAQ
       </h1>
+      <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted sm:text-base">
+        Quick answers about weekly bidding, inventory types, inspections, signing in, and data
+        privacy. Need something else?{" "}
+        <Link
+          href="/contact"
+          className="font-medium text-brand underline-offset-4 hover:underline"
+        >
+          Contact us
+        </Link>{" "}
+        — or jump to{" "}
+        <Link href="/privacy" className="font-medium text-brand underline-offset-4 hover:underline">
+          Privacy policy
+        </Link>
+        .
+      </p>
       <dl className="mt-10 space-y-4">
         {FAQ_ENTRIES.map((item) => (
           <div

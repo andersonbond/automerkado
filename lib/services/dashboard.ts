@@ -1,4 +1,9 @@
 import { prisma } from "@/lib/db";
+import {
+  imageStorageQuotaBytes,
+  sumUploadImageStorageBytes,
+  systemFilesAllocationBytes,
+} from "@/lib/uploadStorage";
 
 export type DashboardRecentInquiry = {
   id: string;
@@ -10,6 +15,12 @@ export type DashboardRecentInquiry = {
 };
 
 export type DashboardAnalytics = {
+  /** Measured listing + site logo uploads under `public/uploads/`. */
+  siteStorageUploadBytes: number;
+  /** Upload bytes plus fixed system/runtime allowance (default 500 MB). */
+  siteStorageUsedBytes: number;
+  /** Reference budget for the bar; `ADMIN_IMAGE_STORAGE_QUOTA_MB` (default 5 GB). */
+  siteStorageQuotaBytes: number;
   totalUsers: number;
   activeUsers: number;
   adminUsers: number;
@@ -32,8 +43,14 @@ export async function getDashboardAnalytics(): Promise<DashboardAnalytics> {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
+  const [uploadBytes, totalUsers] = await Promise.all([
+    sumUploadImageStorageBytes(),
+    prisma.user.count(),
+  ]);
+  const siteStorageUsedBytes = uploadBytes + systemFilesAllocationBytes();
+  const siteStorageQuotaBytesVal = imageStorageQuotaBytes();
+
   const [
-    totalUsers,
     activeUsers,
     adminUsers,
     totalCars,
@@ -50,7 +67,6 @@ export async function getDashboardAnalytics(): Promise<DashboardAnalytics> {
     bidsGrouped,
     recentInquiries,
   ] = await Promise.all([
-    prisma.user.count(),
     prisma.user.count({
       where: { lastLoginAt: { gte: thirtyDaysAgo } },
     }),
@@ -99,6 +115,9 @@ export async function getDashboardAnalytics(): Promise<DashboardAnalytics> {
   }));
 
   return {
+    siteStorageUploadBytes: uploadBytes,
+    siteStorageUsedBytes,
+    siteStorageQuotaBytes: siteStorageQuotaBytesVal,
     totalUsers,
     activeUsers,
     adminUsers,

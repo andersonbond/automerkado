@@ -18,6 +18,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeSelect } from "@/components/theme-select";
+import { isPublicUploadPath } from "@/lib/nextImage";
 
 const linkClass =
   "inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-foreground transition-colors hover:text-brand";
@@ -46,9 +47,11 @@ const mainNav = [
 ] as const;
 
 export function SiteHeaderBar({
+  logoSrc,
   isAuthenticated,
   isAdmin,
 }: {
+  logoSrc: string;
   isAuthenticated: boolean;
   isAdmin: boolean;
 }) {
@@ -97,13 +100,14 @@ export function SiteHeaderBar({
         >
           <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg ring-1 ring-black/5 dark:ring-white/10">
             <Image
-              src="/logo.jpeg"
+              src={logoSrc}
               alt=""
               width={36}
               height={36}
-              className="h-full w-full object-cover object-center"
+              className="h-full w-full object-contain object-center"
               priority
               sizes="36px"
+              unoptimized={isPublicUploadPath(logoSrc)}
             />
           </span>
           <span className="truncate">Automerkado</span>
@@ -167,12 +171,13 @@ export function SiteHeaderBar({
                   >
                     <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg ring-2 ring-brand/40">
                       <Image
-                        src="/logo.jpeg"
+                        src={logoSrc}
                         alt=""
                         width={36}
                         height={36}
-                        className="h-full w-full object-cover object-center"
+                        className="h-full w-full object-contain object-center"
                         sizes="36px"
+                        unoptimized={isPublicUploadPath(logoSrc)}
                       />
                     </span>
                     <span className="truncate text-sm font-semibold tracking-tight text-white">

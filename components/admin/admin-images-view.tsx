@@ -7,13 +7,10 @@ import {
   ImageIcon,
   Images,
   Sparkles,
-  Trash2,
   Upload,
 } from "lucide-react";
-import {
-  createStandaloneImageAction,
-  deleteImageAction,
-} from "@/lib/actions/images";
+import { DeleteImageConfirm } from "@/components/admin/delete-image-confirm";
+import { createStandaloneImageAction } from "@/lib/actions/images";
 import { isPublicUploadPath } from "@/lib/nextImage";
 
 export type AdminImagesViewImage = {
@@ -243,16 +240,13 @@ export function AdminImagesView({
                               <ArrowUpRight className="h-3.5 w-3.5 opacity-70" aria-hidden />
                             </Link>
                           ) : null}
-                          <form action={deleteImageAction} className="flex-1 min-[480px]:flex-none">
-                            <input type="hidden" name="id" value={im.id} />
-                            <button
-                              type="submit"
-                              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/50 dark:text-red-300 dark:hover:bg-red-950/80"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                              Delete
-                            </button>
-                          </form>
+                          <div className="flex-1 min-[480px]:flex-none">
+                            <DeleteImageConfirm
+                              imageId={im.id}
+                              pathLabel={im.path}
+                              attachedTo={im.car?.title ?? null}
+                            />
+                          </div>
                         </div>
                       </div>
                     </li>

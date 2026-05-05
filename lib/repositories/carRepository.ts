@@ -69,7 +69,10 @@ export async function countCars(filters: Omit<CarListFilters, "skip" | "take">) 
 const listCarsInclude = {
   category: true,
   tags: { orderBy: { name: "asc" as const } },
-  images: { orderBy: { sortOrder: "asc" as const }, take: 1 },
+  images: {
+    orderBy: [{ isFeatured: "desc" as const }, { sortOrder: "asc" as const }],
+    take: 1,
+  },
   bids: {
     orderBy: { amount: "desc" as const },
     take: 1,
@@ -107,7 +110,9 @@ export async function getCarBySlug(slug: string) {
     include: {
       category: true,
       tags: { orderBy: { name: "asc" } },
-      images: { orderBy: { sortOrder: "asc" } },
+      images: {
+        orderBy: [{ isFeatured: "desc" }, { sortOrder: "asc" }],
+      },
       bids: {
         orderBy: { createdAt: "desc" },
         take: 50,
@@ -149,7 +154,10 @@ function buildAdminCarSearchWhere(q?: string): Prisma.CarWhereInput {
 
 const adminCarListInclude = {
   category: true,
-  images: { orderBy: { sortOrder: "asc" as const }, take: 1 },
+  images: {
+    orderBy: [{ isFeatured: "desc" as const }, { sortOrder: "asc" as const }],
+    take: 1,
+  },
 } satisfies Prisma.CarInclude;
 
 export type AdminCarListItem = Prisma.CarGetPayload<{

@@ -14,6 +14,7 @@ import { effectiveHighBidDecimal } from "@/lib/services/effectiveListingBid";
 import { getCarBySlug } from "@/lib/repositories/carRepository";
 import { getRepossessedListingExpiresAtIso } from "@/lib/repossessedListing";
 import { absoluteUrl } from "@/lib/site";
+import { getAbsoluteSiteLogoUrl, getSiteLogoSrc } from "@/lib/siteLogo";
 import { Prisma } from "@prisma/client";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -36,9 +37,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const desc = `${car.year} ${car.brand} ${car.model}. ${car.description.slice(0, 140)}${car.description.length > 140 ? "…" : ""}`;
   const canonical = absoluteUrl(`/listings/${car.slug}`);
   const first = car.images[0];
+  const siteLogoAbs = absoluteUrl(await getSiteLogoSrc());
   const ogImages = first
     ? [{ url: absoluteUrl(first.path), alt: first.alt ?? car.title }]
-    : [{ url: absoluteUrl("/logo.svg"), alt: "Automerkado" }];
+    : [{ url: siteLogoAbs, alt: "Automerkado" }];
 
   return {
     title: car.title,
@@ -110,10 +112,11 @@ export default async function CarDetailPage({ params }: Props) {
 
   const weeklyOpen = isWeeklyBiddingOpen();
   const canonical = absoluteUrl(`/listings/${car.slug}`);
+  const fallbackLogoAbs = await getAbsoluteSiteLogoUrl();
   const imageUrls =
     car.images.length > 0
       ? car.images.map((im) => absoluteUrl(im.path))
-      : [absoluteUrl("/logo.svg")];
+      : [fallbackLogoAbs];
 
   const productLd = {
     "@context": "https://schema.org",

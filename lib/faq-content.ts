@@ -11,4 +11,16 @@ export const FAQ_ENTRIES = [
     q: "How do I request an inspection?",
     a: "Open a vehicle page while signed in and submit an inspection request with any notes for our team.",
   },
+  {
+    q: "How do I register or sign in?",
+    a: "Create an account from the Register page, then sign in from Sign in whenever you want to place bids or save activity to your profile. Use an email address you check regularly—we may contact you about bids and inspections.",
+  },
+  {
+    q: "Who do I contact for help with bids, listings, or my account?",
+    a: "Use the Contact page with your question. For bids or inspections, mention the listing or vehicle title so we can reply quickly during business hours.",
+  },
+  {
+    q: "Where can I read the Privacy policy?",
+    a: "Open /privacy—it explains what we collect, how we use it, cookies, and your choices. Every page footer also links to Privacy policy.",
+  },
 ] as const;

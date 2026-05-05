@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import { isPublicUploadPath } from "@/lib/nextImage";
+import { getSiteLogoSrc } from "@/lib/siteLogo";
 
 const links = [
   { href: "/listings/certified", label: "Certified" },
@@ -7,9 +9,11 @@ const links = [
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },
   { href: "/blog", label: "Blog" },
+  { href: "/privacy", label: "Privacy policy" },
 ] as const;
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const logoSrc = await getSiteLogoSrc();
   return (
     <footer className="mt-auto border-t border-white/10 bg-inverse text-white">
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
@@ -21,12 +25,13 @@ export function SiteFooter() {
             >
               <span className="relative block h-10 w-10 shrink-0">
                 <Image
-                  src="/logo.svg"
+                  src={logoSrc}
                   alt=""
                   width={40}
                   height={40}
                   className="h-full w-full object-contain object-left"
                   sizes="40px"
+                  unoptimized={isPublicUploadPath(logoSrc)}
                 />
               </span>
               Automerkado

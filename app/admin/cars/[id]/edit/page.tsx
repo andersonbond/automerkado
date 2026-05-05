@@ -9,13 +9,15 @@ import {
   CheckCircle2,
   ImagePlus,
   Megaphone,
+  Star,
   Tag,
-  Trash2,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { PhpFormattedPriceInput } from "@/components/admin/php-formatted-price-input";
-import { deleteCarAction, updateCarAction } from "@/lib/actions/cars";
+import { DeleteCarConfirm } from "@/components/admin/delete-car-confirm";
+import { updateCarAction } from "@/lib/actions/cars";
 import { prisma } from "@/lib/db";
 import { isPublicUploadPath } from "@/lib/nextImage";
 
@@ -53,7 +55,8 @@ export default async function EditCarPage({
 
   const categories = await prisma.category.findMany({ orderBy: { name: "asc" } });
   const err = sp.error;
-  const heroImage = car.images[0];
+  const heroImage =
+    car.images.find((i) => i.isFeatured) ?? car.images[0] ?? null;
 
   return (
     <div className="relative min-h-full overflow-hidden p-6 md:p-8 lg:p-10">
@@ -122,11 +125,17 @@ export default async function EditCarPage({
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] lg:items-start xl:grid-cols-[minmax(0,1fr)_380px]">
           {/* Gallery first in DOM: appears above form on mobile */}
           <aside className="min-w-0 lg:col-start-2 lg:row-start-1 lg:sticky lg:top-4 lg:self-start">
-            <EditCarGallery images={car.images} heroPath={heroImage?.path} title={car.title} />
+            <EditCarGallery
+              formId={`edit-car-${car.id}`}
+              images={car.images}
+              heroPath={heroImage?.path}
+              title={car.title}
+            />
           </aside>
 
           <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-1">
             <form
+              id={`edit-car-${car.id}`}
               action={updateCarAction}
               className="overflow-hidden rounded-2xl border border-surface/90 bg-card shadow-card ring-1 ring-black/[0.04]"
             >
@@ -320,52 +329,30 @@ export default async function EditCarPage({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4 border-t border-surface/80 bg-gradient-to-br from-surface/45 via-surface/25 to-transparent px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-                <p className="max-w-sm text-xs leading-relaxed text-muted">
+              <div className="flex flex-col gap-4 border-t border-surface/80 bg-gradient-to-br from-surface/45 via-surface/25 to-transparent px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-8">
+                <p className="min-w-0 max-w-xl flex-1 text-xs leading-relaxed text-muted sm:py-0.5">
                   Saving updates the public listing when the car is active on the site.
                 </p>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex shrink-0 flex-row flex-nowrap items-center justify-end gap-3">
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-6 py-2.5 text-sm font-semibold text-brand-foreground shadow-md shadow-brand/20 transition hover:opacity-95 active:scale-[0.98]"
+                    className="inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground shadow-md shadow-brand/20 transition hover:opacity-95 active:scale-[0.98] sm:px-6"
                   >
                     <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
                     Save changes
                   </button>
                   <Link
                     href="/admin/cars"
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-surface bg-card px-6 py-2.5 text-sm font-semibold text-foreground shadow-sm transition hover:bg-surface/80"
+                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-surface bg-card px-5 py-2.5 text-sm font-semibold text-foreground shadow-sm transition hover:bg-surface/80 sm:px-6"
                   >
-                    <ArrowLeft className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+                    <X className="h-4 w-4 shrink-0 text-muted" aria-hidden />
                     Cancel
                   </Link>
                 </div>
               </div>
             </form>
 
-            <form
-              action={deleteCarAction}
-              className="overflow-hidden rounded-2xl border border-red-200/90 bg-gradient-to-br from-red-50/90 to-card px-5 py-6 shadow-sm sm:px-8"
-            >
-              <input type="hidden" name="id" value={car.id} />
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h2 className="flex items-center gap-2 text-sm font-semibold text-red-900">
-                    <Trash2 className="h-4 w-4 shrink-0" aria-hidden />
-                    Danger zone
-                  </h2>
-                  <p className="mt-1 max-w-md text-sm text-red-800/90">
-                    Delete this listing permanently. This cannot be undone.
-                  </p>
-                </div>
-                <button
-                  type="submit"
-                  className="shrink-0 rounded-xl border border-red-600 bg-card px-5 py-2.5 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-50"
-                >
-                  Delete car
-                </button>
-              </div>
-            </form>
+            <DeleteCarConfirm carId={car.id} carTitle={car.title} />
           </div>
         </div>
       </div>
@@ -374,15 +361,24 @@ export default async function EditCarPage({
 }
 
 function EditCarGallery({
+  formId,
   images,
   heroPath,
   title,
 }: {
-  images: { id: string; path: string; alt: string | null; sortOrder: number }[];
+  formId: string;
+  images: {
+    id: string;
+    path: string;
+    alt: string | null;
+    sortOrder: number;
+    isFeatured: boolean;
+  }[];
   heroPath?: string;
   title: string;
 }) {
-  const rest = images.slice(1);
+  const thumbs = [...images].sort((a, b) => a.sortOrder - b.sortOrder);
+  const hasFeatured = images.some((i) => i.isFeatured);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-surface/90 bg-card shadow-card ring-1 ring-black/[0.04]">
@@ -397,7 +393,7 @@ function EditCarGallery({
         {heroPath ? (
           <Image
             src={heroPath}
-            alt={images[0]?.alt ?? title}
+            alt={images.find((i) => i.path === heroPath)?.alt ?? title}
             fill
             unoptimized={isPublicUploadPath(heroPath)}
             className="object-cover"
@@ -412,24 +408,52 @@ function EditCarGallery({
         )}
       </div>
 
-      {rest.length > 0 ? (
-        <div className="grid grid-cols-4 gap-1.5 p-3 sm:gap-2 sm:p-4">
-          {rest.map((im) => (
-            <div
-              key={im.id}
-              className="relative aspect-square overflow-hidden rounded-lg border border-surface/80 bg-surface/30 ring-1 ring-black/[0.03]"
-            >
-              <Image
-                src={im.path}
-                alt={im.alt ?? ""}
-                fill
-                unoptimized={isPublicUploadPath(im.path)}
-                className="object-cover"
-                sizes="96px"
-              />
-            </div>
-          ))}
-        </div>
+      {thumbs.length > 0 ? (
+        <fieldset className="border-0 p-0">
+          <legend className="border-b border-surface/80 bg-surface/25 px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted">
+            Featured on site
+          </legend>
+          <p className="px-4 pt-3 text-[11px] leading-relaxed text-muted">
+            Choose which image is shown first on the listing and on inventory cards. Submit
+            with <span className="font-medium text-foreground">Save changes</span> below.
+          </p>
+          <ul className="grid grid-cols-4 gap-1.5 p-3 sm:gap-2 sm:p-4">
+            {thumbs.map((im) => {
+              const defaultOn =
+                im.isFeatured || (!hasFeatured && im.id === thumbs[0]?.id);
+              return (
+                <li key={im.id} className="min-w-0">
+                  <label className="block cursor-pointer">
+                    <input
+                      form={formId}
+                      type="radio"
+                      name="featuredImageId"
+                      value={im.id}
+                      defaultChecked={defaultOn}
+                      className="peer sr-only"
+                    />
+                    <span className="relative block aspect-square overflow-hidden rounded-lg border-2 border-surface/80 bg-surface/30 ring-1 ring-black/[0.03] transition peer-checked:border-brand peer-checked:ring-2 peer-checked:ring-brand/20 hover:border-brand/35">
+                      <Image
+                        src={im.path}
+                        alt={im.alt ?? ""}
+                        fill
+                        unoptimized={isPublicUploadPath(im.path)}
+                        className="object-cover"
+                        sizes="96px"
+                      />
+                      <span className="pointer-events-none absolute bottom-1 left-1 right-1 flex justify-center opacity-0 transition peer-checked:opacity-100">
+                        <span className="inline-flex items-center gap-0.5 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-semibold text-white">
+                          <Star className="h-2.5 w-2.5 fill-amber-300/90 text-amber-200" aria-hidden />
+                          Featured
+                        </span>
+                      </span>
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </fieldset>
       ) : heroPath ? (
         <p className="border-t border-surface/80 px-4 py-3 text-center text-xs text-muted">
           Only cover image — add more from the form.
@@ -438,7 +462,7 @@ function EditCarGallery({
 
       <div className="border-t border-surface/80 px-4 py-3">
         <p className="text-[11px] leading-relaxed text-muted">
-          Order follows listing sort. New uploads append to the gallery after save.
+          Sort order is upload order. New photos append at the end after save.
         </p>
       </div>
     </div>

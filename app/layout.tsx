@@ -2,7 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { SessionProvider } from "@/components/session-provider";
 import { ThemeProvider } from "@/components/theme-provider";
-import { siteUrlObject } from "@/lib/site";
+import { absoluteUrl, siteUrlObject } from "@/lib/site";
+import { DEFAULT_FAVICON, getSiteLogoSrc } from "@/lib/siteLogo";
 import "./globals.css";
 
 const fontSans = Plus_Jakarta_Sans({
@@ -20,69 +21,88 @@ export const viewport: Viewport = {
   ],
 };
 
-export const metadata: Metadata = {
-  metadataBase: siteUrlObject(),
-  title: {
-    default:
-      "Automerkado · Certified & repossessed vehicles in the Philippines",
-    template: "%s | Automerkado",
-  },
-  description:
-    "Browse certified pre-owned and repossessed cars in the Philippines. Clear specs, weekly bidding (Manila time), and inspection requests—all in one place.",
-  keywords: [
-    "used cars Philippines",
-    "certified pre-owned Philippines",
-    "repossessed cars Philippines",
-    "car bidding Philippines",
-    "pre-owned vehicles Manila",
-    "automotive marketplace Philippines",
-  ],
-  applicationName: "Automerkado",
-  referrer: "origin-when-cross-origin",
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+function appleTouchIcon(logoPath: string) {
+  if (logoPath.endsWith(".webp")) {
+    return { url: "/logo.jpeg" as const, type: "image/jpeg" as const, sizes: "180x180" as const };
+  }
+  if (logoPath.endsWith(".png")) {
+    return { url: logoPath, type: "image/png" as const, sizes: "180x180" as const };
+  }
+  return {
+    url: logoPath,
+    type: "image/jpeg" as const,
+    sizes: "180x180" as const,
+  };
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const logoPath = await getSiteLogoSrc();
+  const ogImageUrl = absoluteUrl(logoPath);
+
+  return {
+    metadataBase: siteUrlObject(),
+    title: {
+      default:
+        "Automerkado · Certified & repossessed vehicles in the Philippines",
+      template: "%s | Automerkado",
+    },
+    description:
+      "Browse certified pre-owned and repossessed cars in the Philippines. Clear specs, weekly bidding (Manila time), and inspection requests—all in one place.",
+    keywords: [
+      "used cars Philippines",
+      "certified pre-owned Philippines",
+      "repossessed cars Philippines",
+      "car bidding Philippines",
+      "pre-owned vehicles Manila",
+      "automotive marketplace Philippines",
+    ],
+    applicationName: "Automerkado",
+    referrer: "origin-when-cross-origin",
+    robots: {
       index: true,
       follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-      "max-video-preview": -1,
-    },
-  },
-  icons: {
-    icon: [{ url: "/logo.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/logo.jpeg", type: "image/jpeg", sizes: "180x180" }],
-  },
-  openGraph: {
-    type: "website",
-    siteName: "Automerkado",
-    locale: "en_PH",
-    title:
-      "Automerkado · Certified & repossessed vehicles in the Philippines",
-    description:
-      "Browse certified pre-owned and repossessed cars. Weekly bidding on Manila time, transparent specs, and inspection requests.",
-    images: [
-      {
-        url: "/logo.jpeg",
-        width: 512,
-        height: 512,
-        alt: "Automerkado",
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
       },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Automerkado",
-    description:
-      "Certified & repossessed vehicles in the Philippines. Browse, bid, and request inspections.",
-    images: ["/logo.jpeg"],
-  },
-  formatDetection: {
-    email: false,
-    telephone: false,
-  },
-};
+    },
+    icons: {
+      icon: [{ url: DEFAULT_FAVICON, type: "image/svg+xml" }],
+      apple: [appleTouchIcon(logoPath)],
+    },
+    openGraph: {
+      type: "website",
+      siteName: "Automerkado",
+      locale: "en_PH",
+      title:
+        "Automerkado · Certified & repossessed vehicles in the Philippines",
+      description:
+        "Browse certified pre-owned and repossessed cars. Weekly bidding on Manila time, transparent specs, and inspection requests.",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 512,
+          height: 512,
+          alt: "Automerkado",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Automerkado",
+      description:
+        "Certified & repossessed vehicles in the Philippines. Browse, bid, and request inspections.",
+      images: [ogImageUrl],
+    },
+    formatDetection: {
+      email: false,
+      telephone: false,
+    },
+  };
+}
 
 export default function RootLayout({
   children,

@@ -5,6 +5,7 @@ import {
   BarChart3,
   Car,
   Gavel,
+  HardDrive,
   ImageIcon,
   Inbox,
   Megaphone,
@@ -15,6 +16,7 @@ import {
 import type { DashboardAnalytics } from "@/lib/services/dashboard";
 import { BidsPerCarChart } from "@/components/admin/bids-per-car-chart";
 import { CategoryPie } from "@/components/admin/category-pie";
+import { formatStorageBytes } from "@/lib/uploadStorage";
 
 const INQUIRY_KIND: Record<string, string> = {
   TEST_DRIVE: "Test drive",
@@ -73,6 +75,12 @@ export function AdminDashboardView({ analytics: a }: { analytics: DashboardAnaly
             </Link>
           </div>
         </header>
+
+        <SiteStorageUsage
+          uploadBytes={a.siteStorageUploadBytes}
+          usedBytes={a.siteStorageUsedBytes}
+          quotaBytes={a.siteStorageQuotaBytes}
+        />
 
         {/* Hero metrics */}
         <section aria-labelledby="pulse-heading">
@@ -316,6 +324,84 @@ export function AdminDashboardView({ analytics: a }: { analytics: DashboardAnaly
         </div>
       </div>
     </div>
+  );
+}
+
+function SiteStorageUsage({
+  uploadBytes,
+  usedBytes,
+  quotaBytes,
+}: {
+  uploadBytes: number;
+  usedBytes: number;
+  quotaBytes: number;
+}) {
+  const systemBytes = Math.max(0, usedBytes - uploadBytes);
+  const pctRaw = quotaBytes > 0 ? (usedBytes / quotaBytes) * 100 : 0;
+  const barWidth = Math.min(100, Math.max(0, pctRaw));
+  const pctRounded = Math.min(999, Math.round(pctRaw));
+  const overBudget = usedBytes > quotaBytes;
+
+  const title = `Total ${formatStorageBytes(usedBytes)} includes ${formatStorageBytes(uploadBytes)} in uploads plus ${formatStorageBytes(systemBytes)} allocated for system/runtime (e.g. Node). Compared to ${formatStorageBytes(quotaBytes)} reference budget. Override quota with ADMIN_IMAGE_STORAGE_QUOTA_MB; system allowance with ADMIN_SYSTEM_STORAGE_ALLOCATION_MB.`;
+
+  const ariaUsed = `${formatStorageBytes(usedBytes)} of ${formatStorageBytes(quotaBytes)} used (${formatStorageBytes(uploadBytes)} uploads plus ${formatStorageBytes(systemBytes)} system allocation)`;
+
+  return (
+    <section
+      className="rounded-xl border border-border bg-card px-4 py-3 shadow-sm ring-1 ring-black/[0.02]"
+      aria-labelledby="site-storage-heading"
+      title={title}
+    >
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <span
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ${
+              overBudget
+                ? "bg-amber-50 text-amber-800 ring-amber-100"
+                : "bg-brand/10 text-brand ring-brand/15"
+            }`}
+          >
+            <HardDrive className="h-4 w-4" aria-hidden strokeWidth={1.85} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <h2 id="site-storage-heading" className="text-sm font-semibold text-foreground">
+                Site storage
+              </h2>
+              <span className="text-xs tabular-nums text-muted">
+                <span className="font-medium text-foreground">{formatStorageBytes(usedBytes)}</span>
+                <span> / {formatStorageBytes(quotaBytes)}</span>
+                <span className="text-muted"> · {pctRounded}%</span>
+                {overBudget ? (
+                  <span className="ml-1 font-medium text-amber-800">Over budget</span>
+                ) : null}
+              </span>
+            </div>
+            <div
+              className="mt-1.5 h-1.5 w-full min-w-0 overflow-hidden rounded-full bg-border/90 sm:max-w-md"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={quotaBytes}
+              aria-valuenow={usedBytes}
+              aria-label={ariaUsed}
+            >
+              <div
+                className={`h-full rounded-full transition-[width] duration-500 ease-out ${
+                  overBudget ? "bg-amber-500" : "bg-brand"
+                }`}
+                style={{ width: `${barWidth}%` }}
+              />
+            </div>
+          </div>
+        </div>
+        <Link
+          href="/admin/images"
+          className="shrink-0 self-end text-xs font-semibold text-brand hover:underline sm:self-center"
+        >
+          Manage images
+        </Link>
+      </div>
+    </section>
   );
 }
 

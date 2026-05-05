@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { plainExcerptFromMarkdown } from "@/lib/markdownExcerpt";
 import { absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 
 export default async function BlogIndexPage() {
   const posts = await prisma.post.findMany({
-    where: { published: true },
+    where: { published: true, publishedAt: { not: null } },
     orderBy: { publishedAt: "desc" },
   });
 
@@ -30,32 +31,36 @@ export default async function BlogIndexPage() {
       <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
         Blog
       </h1>
-      <ul className="mt-10 space-y-4">
-        {posts.map((p) => (
-          <li key={p.id}>
-            <Link
-              href={`/blog/${p.slug}`}
-              className="group block rounded-2xl border border-border bg-card p-5 shadow-card transition-colors hover:border-brand/25 sm:p-6"
-            >
-              <span className="text-lg font-semibold text-foreground group-hover:text-brand">
-                {p.title}
-              </span>
-              {p.publishedAt ? (
-                <p className="mt-2 text-xs font-medium uppercase tracking-wider text-muted">
-                  {new Intl.DateTimeFormat("en-PH", { dateStyle: "medium" }).format(
-                    p.publishedAt,
-                  )}
-                </p>
-              ) : null}
-            </Link>
-          </li>
-        ))}
-      </ul>
       {posts.length === 0 ? (
         <p className="mt-8 rounded-2xl border border-dashed border-border bg-card px-6 py-10 text-center text-sm text-muted">
           No published posts yet.
         </p>
-      ) : null}
+      ) : (
+        <ul className="mt-10 space-y-4">
+          {posts.map((p) => (
+            <li key={p.id}>
+              <Link
+                href={`/blog/${p.slug}`}
+                className="group block rounded-2xl border border-border bg-card p-5 shadow-card transition-colors hover:border-brand/25 sm:p-6"
+              >
+                <span className="text-lg font-semibold text-foreground group-hover:text-brand">
+                  {p.title}
+                </span>
+                {p.publishedAt ? (
+                  <p className="mt-2 text-xs font-medium uppercase tracking-wider text-muted">
+                    {new Intl.DateTimeFormat("en-PH", { dateStyle: "medium" }).format(
+                      p.publishedAt,
+                    )}
+                  </p>
+                ) : null}
+                <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-muted">
+                  {plainExcerptFromMarkdown(p.body, 180)}
+                </p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

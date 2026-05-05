@@ -57,7 +57,7 @@ export function TestimonialsSection() {
         <div className="mx-auto max-w-2xl text-center">
           <h2
             id="testimonials-heading"
-            className="mt-2 text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
+            className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
           >
             What our customers say
           </h2>

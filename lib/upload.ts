@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, readdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -43,6 +43,38 @@ export async function storeUploadedFile(file: File): Promise<string | null> {
   const rel = `/uploads/files/${name}`;
   const disk = path.join(process.cwd(), "public", "uploads", "files", name);
   await mkdir(path.dirname(disk), { recursive: true });
+  await writeFile(disk, buf);
+  return rel;
+}
+
+export async function deleteStoredSiteLogoFiles(): Promise<void> {
+  const dir = path.join(process.cwd(), "public", "uploads", "site");
+  let names: string[];
+  try {
+    names = await readdir(dir);
+  } catch {
+    return;
+  }
+  await Promise.all(
+    names
+      .filter((n) => n.startsWith("site-logo"))
+      .map((n) => unlink(path.join(dir, n)).catch(() => {})),
+  );
+}
+
+/** Replaces any previous `site-logo.*` under `public/uploads/site/`. */
+export async function storeSiteLogo(file: File): Promise<string | null> {
+  if (!IMAGE_TYPES.has(file.type)) return null;
+  const buf = Buffer.from(await file.arrayBuffer());
+  if (buf.length > MAX_IMAGE) return null;
+
+  const ext = extForMime(file.type);
+  const filename = `site-logo${ext}`;
+  const rel = `/uploads/site/${filename}`;
+  const diskDir = path.join(process.cwd(), "public", "uploads", "site");
+  await mkdir(diskDir, { recursive: true });
+  await deleteStoredSiteLogoFiles();
+  const disk = path.join(diskDir, filename);
   await writeFile(disk, buf);
   return rel;
 }

@@ -79,13 +79,14 @@ model CarInquiry {
 }
 
 model CarImage {
-  id        String   @id @default(cuid())
-  carId     String?
-  car       Car?     @relation(fields: [carId], references: [id], onDelete: Cascade)
-  path      String
-  sortOrder Int      @default(0)
-  alt       String?
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  carId       String?
+  car         Car?     @relation(fields: [carId], references: [id], onDelete: Cascade)
+  path        String
+  sortOrder   Int      @default(0)
+  isFeatured  Boolean  @default(false)
+  alt         String?
+  createdAt   DateTime @default(now())
 }
 
 model Bid {
@@ -121,6 +122,12 @@ model Post {
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+model SiteSettings {
+  id        String   @id @default("default")
+  logoPath  String?
+  updatedAt DateTime @updatedAt
 }
 
 model InspectionRequest {

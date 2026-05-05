@@ -10,6 +10,27 @@ import { prisma } from "@/lib/db";
 import { syncCarTags } from "@/lib/syncCarTags";
 import { storeUploadedImage } from "@/lib/upload";
 
+async function applyFeaturedImageForCar(carId: string, formData: FormData) {
+  const rows = await prisma.carImage.findMany({
+    where: { carId },
+    orderBy: { sortOrder: "asc" },
+    select: { id: true },
+  });
+  if (rows.length === 0) return;
+
+  const raw = String(formData.get("featuredImageId") ?? "").trim();
+  const valid = new Set(rows.map((r) => r.id));
+  const chosen = raw && valid.has(raw) ? raw : rows[0]!.id;
+
+  await prisma.$transaction([
+    prisma.carImage.updateMany({ where: { carId }, data: { isFeatured: false } }),
+    prisma.carImage.update({
+      where: { id: chosen },
+      data: { isFeatured: true },
+    }),
+  ]);
+}
+
 const carSchema = z.object({
   title: z.string().min(1).max(200),
   slug: z
@@ -91,13 +112,30 @@ export async function createCarAction(formData: FormData) {
   const files = formData
     .getAll("images")
     .filter((f): f is File => f instanceof File && f.size > 0);
-  let order = 0;
+
+  const rawFeaturedIdx = String(formData.get("featuredImageIndex") ?? "0").trim();
+  let featuredIdx = parseInt(rawFeaturedIdx, 10);
+  if (Number.isNaN(featuredIdx)) featuredIdx = 0;
+
+  const paths: string[] = [];
   for (const file of files) {
     const pathStr = await storeUploadedImage(file);
     if (!pathStr) continue;
-    await prisma.carImage.create({
-      data: { carId: car.id, path: pathStr, sortOrder: order++ },
-    });
+    paths.push(pathStr);
+  }
+
+  if (paths.length > 0) {
+    featuredIdx = Math.max(0, Math.min(paths.length - 1, featuredIdx));
+    for (let i = 0; i < paths.length; i++) {
+      await prisma.carImage.create({
+        data: {
+          carId: car.id,
+          path: paths[i]!,
+          sortOrder: i,
+          isFeatured: i === featuredIdx,
+        },
+      });
+    }
   }
 
   await syncCarTags(car.id, String(formData.get("tags") ?? ""));
@@ -159,9 +197,11 @@ export async function updateCarAction(formData: FormData) {
     if (!pathStr) continue;
     maxOrder += 1;
     await prisma.carImage.create({
-      data: { carId: id, path: pathStr, sortOrder: maxOrder },
+      data: { carId: id, path: pathStr, sortOrder: maxOrder, isFeatured: false },
     });
   }
+
+  await applyFeaturedImageForCar(id, formData);
 
   await syncCarTags(id, String(formData.get("tags") ?? ""));
 

@@ -1,5 +1,7 @@
 import NextImage from "next/image";
 import Link from "next/link";
+import { isPublicUploadPath } from "@/lib/nextImage";
+import { getSiteLogoSrc } from "@/lib/siteLogo";
 import {
   Car,
   ExternalLink,
@@ -7,6 +9,7 @@ import {
   Image,
   Inbox,
   LayoutDashboard,
+  Newspaper,
   Settings,
 } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
@@ -17,6 +20,7 @@ const links = [
   { href: "/admin/inquiries", label: "Inquiries", Icon: Inbox },
   { href: "/admin/images", label: "Images", Icon: Image },
   { href: "/admin/files", label: "Files", Icon: FolderOpen },
+  { href: "/admin/blog", label: "Blog", Icon: Newspaper },
   { href: "/admin/settings", label: "Settings", Icon: Settings },
 ] as const;
 
@@ -25,7 +29,8 @@ const linkClass =
 
 const iconClass = "h-4 w-4 shrink-0 opacity-90";
 
-export function AdminSidebar() {
+export async function AdminSidebar() {
+  const logoSrc = await getSiteLogoSrc();
   return (
     <aside className="flex w-56 shrink-0 flex-col overflow-hidden border-r border-surface bg-[#2f3542] text-white">
       <div className="shrink-0 border-b border-white/10 px-4 py-5">
@@ -35,12 +40,13 @@ export function AdminSidebar() {
         >
           <span className="relative h-7 w-7 shrink-0 brightness-110">
             <NextImage
-              src="/logo.svg"
+              src={logoSrc}
               alt=""
               width={28}
               height={28}
               className="h-full w-full object-contain"
               sizes="28px"
+              unoptimized={isPublicUploadPath(logoSrc)}
             />
           </span>
           Automerkado
