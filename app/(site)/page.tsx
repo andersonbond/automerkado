@@ -19,6 +19,8 @@ import {
 } from "@/lib/repositories/carRepository";
 import { getRepossessedListingExpiresAtIso } from "@/lib/repossessedListing";
 import { absoluteUrl } from "@/lib/site";
+import { HeroBackdropMedia } from "@/components/landing/hero-backdrop-media";
+import { getHeroVisualConfig } from "@/lib/siteHero";
 import { isPublicUploadPath } from "@/lib/nextImage";
 
 export const metadata: Metadata = {
@@ -39,41 +41,38 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const featured: CarListItem[] = await listCars({ skip: 0, take: 12 });
+  const hero = await getHeroVisualConfig();
 
   return (
     <div className="pb-16">
       <section className="relative isolate overflow-hidden text-white">
         <div className="pointer-events-none absolute inset-0 select-none">
-          <Image
-            src="/bg_image.JPEG"
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            quality={82}
-            className="object-cover object-[center_38%] sm:object-[center_42%] lg:object-[center_45%] motion-safe:scale-[1.04] motion-reduce:scale-100"
+          <HeroBackdropMedia
+            src={hero.src}
+            objectPosition={hero.objectPositionPct}
+            isVideo={hero.isVideo}
           />
         </div>
-        {/* Readability & grade: stacked translucent scrims (no mix-blend quirks). */}
+        {/* Readability & grade: stacked translucent scrims (lighter wash so photo reads through). */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#07080c]/93 via-[#0d1117]/72 to-[#07080c]/91"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#0c0e14]/66 via-[#151a24]/42 to-[#0c0e14]/60"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_115%_85%_at_78%_8%,rgba(207,21,32,0.11),transparent_55%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_115%_85%_at_78%_8%,rgba(207,21,32,0.12),transparent_55%)]"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_12%_88%,rgba(255,255,255,0.04),transparent_50%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_12%_88%,rgba(255,255,255,0.08),transparent_50%)]"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-t from-[#050607]/80 via-[#0d1117]/40 to-transparent sm:h-[42%]"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-t from-[#090b10]/52 via-[#141820]/18 to-transparent sm:h-[42%]"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/[0.055]"
+          className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/[0.07]"
         />
 
         <div className="relative z-10 mx-auto max-w-6xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-14 lg:px-8 lg:pb-16 lg:pt-16">

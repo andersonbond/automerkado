@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { assertAdmin } from "@/lib/actions/admin-guard";
 import { prisma } from "@/lib/db";
-import { storeUploadedFile } from "@/lib/upload";
+import { storeUploadedFile, unlinkPublicUploadedFile } from "@/lib/upload";
 
 export async function createFileAssetAction(formData: FormData) {
   await assertAdmin();
@@ -36,7 +36,16 @@ export async function deleteFileAssetAction(formData: FormData) {
   await assertAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
+
+  const asset = await prisma.fileAsset.findUnique({ where: { id } });
+  if (!asset) {
+    revalidatePath("/admin/files");
+    redirect("/admin/files");
+  }
+
+  await unlinkPublicUploadedFile(asset.path);
   await prisma.fileAsset.delete({ where: { id } });
+
   revalidatePath("/admin/files");
   redirect("/admin/files");
 }

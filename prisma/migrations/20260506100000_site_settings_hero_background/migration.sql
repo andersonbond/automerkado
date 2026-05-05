@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "SiteSettings" ADD COLUMN "heroBackgroundPath" TEXT;
+ALTER TABLE "SiteSettings" ADD COLUMN "heroFocusX" INTEGER NOT NULL DEFAULT 50;
+ALTER TABLE "SiteSettings" ADD COLUMN "heroFocusY" INTEGER NOT NULL DEFAULT 42;

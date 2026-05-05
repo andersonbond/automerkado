@@ -125,9 +125,12 @@ model Post {
 }
 
 model SiteSettings {
-  id        String   @id @default("default")
-  logoPath  String?
-  updatedAt DateTime @updatedAt
+  id                 String   @id @default("default")
+  logoPath           String?
+  heroBackgroundPath String?
+  heroFocusX         Int      @default(50)
+  heroFocusY         Int      @default(42)
+  updatedAt          DateTime @updatedAt
 }
 
 model InspectionRequest {
