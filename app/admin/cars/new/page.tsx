@@ -10,6 +10,7 @@ import {
   Tag,
 } from "lucide-react";
 import Link from "next/link";
+import { AdminSubmitButton } from "@/components/admin/admin-submit-button";
 import { CarImagesFilePicker } from "@/components/admin/car-images-file-picker";
 import { PhpFormattedPriceInput } from "@/components/admin/php-formatted-price-input";
 import { prisma } from "@/lib/db";
@@ -230,13 +231,13 @@ export default async function NewCarPage({
               can appear on the public site.
             </p>
             <div className="flex flex-wrap gap-3">
-              <button
-                type="submit"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-6 py-2.5 text-sm font-semibold text-brand-foreground shadow-md shadow-brand/20 transition hover:opacity-95 active:scale-[0.98]"
+              <AdminSubmitButton
+                pendingLabel="Creating…"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-6 py-2.5 text-sm font-semibold text-brand-foreground shadow-md shadow-brand/20 transition hover:opacity-95 active:scale-[0.98] disabled:hover:opacity-70"
               >
                 <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
                 Create car
-              </button>
+              </AdminSubmitButton>
               <Link
                 href="/admin/cars"
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-surface bg-card px-6 py-2.5 text-sm font-semibold text-foreground shadow-sm transition hover:bg-surface/80"
