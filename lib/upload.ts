@@ -4,7 +4,7 @@ import path from "path";
 import { resolvePublicUploadsPath } from "@/lib/appDeployRoot";
 
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const MAX_IMAGE = 5 * 1024 * 1024;
+const MAX_IMAGE = 10 * 1024 * 1024;
 const MAX_HERO_IMAGE = 10 * 1024 * 1024;
 /** Short looping hero clips (MP4 / WebM / MOV). */
 const MAX_HERO_VIDEO = 45 * 1024 * 1024;
