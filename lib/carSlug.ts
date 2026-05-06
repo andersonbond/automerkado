@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import type { PrismaClient } from "@prisma/client";
 
 /** Derives a URL-safe slug from listing title (matches car slug regex). */
@@ -12,7 +13,12 @@ export function slugFromTitle(title: string): string {
   return s || "listing";
 }
 
-/** Picks the first unused slug: `base`, then `base-2`, `base-3`, … */
+/**
+ * Returns an unused car slug. First tries `base` itself; on conflict, appends a
+ * short random hex suffix (e.g. `my-car-a3f9`) and retries until one is free.
+ * Hex (4 → 6 → 8 chars) keeps the slug compact while making collisions on
+ * generic titles like "listing" practically impossible.
+ */
 export async function allocateUniqueCarSlug(
   db: PrismaClient,
   base: string,
@@ -23,12 +29,21 @@ export async function allocateUniqueCarSlug(
     .slice(0, 200);
   if (!normalized) normalized = "listing";
 
-  let candidate = normalized;
-  let n = 1;
-  while (await db.car.findUnique({ where: { slug: candidate } })) {
-    const suffix = `-${n}`;
-    n += 1;
-    candidate = `${normalized.slice(0, Math.max(1, 200 - suffix.length))}${suffix}`;
+  if (!(await db.car.findUnique({ where: { slug: normalized } }))) {
+    return normalized;
   }
-  return candidate;
+
+  for (const hexLen of [4, 6, 8] as const) {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const suffix = `-${randomBytes(hexLen).toString("hex").slice(0, hexLen)}`;
+      const candidate = `${normalized.slice(0, Math.max(1, 200 - suffix.length))}${suffix}`;
+      if (!(await db.car.findUnique({ where: { slug: candidate } }))) {
+        return candidate;
+      }
+    }
+  }
+
+  // Astronomically unlikely fallback: pad with a longer random suffix.
+  const suffix = `-${randomBytes(12).toString("hex")}`;
+  return `${normalized.slice(0, Math.max(1, 200 - suffix.length))}${suffix}`;
 }

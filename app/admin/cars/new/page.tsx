@@ -98,7 +98,9 @@ export default async function NewCarPage({
                 <Field
                   label="Slug (URL)"
                   name="slug"
-                  hint="Optional. Leave blank to auto-build from title (`my-car` style). Lowercase letters, numbers, hyphens."
+                  autoComplete="off"
+                  placeholder="Leave blank to auto-generate from title"
+                  hint="Optional. Lowercase letters, numbers, hyphens."
                   className={inputClass}
                 />
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -285,6 +287,8 @@ function Field({
   type = "text",
   required,
   hint,
+  placeholder,
+  autoComplete,
   className,
 }: {
   label: string;
@@ -292,12 +296,22 @@ function Field({
   type?: string;
   required?: boolean;
   hint?: string;
+  placeholder?: string;
+  autoComplete?: string;
   className: string;
 }) {
   return (
     <label className={labelClass}>
       {label}
-      <input name={name} type={type} required={required} className={className} />
+      <input
+        name={name}
+        type={type}
+        required={required}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        defaultValue=""
+        className={className}
+      />
       {hint ? (
         <span className="mt-1.5 block text-xs text-muted">{hint}</span>
       ) : null}

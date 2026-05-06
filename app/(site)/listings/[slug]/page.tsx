@@ -250,8 +250,8 @@ export default async function CarDetailPage({ params }: Props) {
         <RepossessedListingCountdownDetail expiresAtIso={repossessedExpiresIso} />
       ) : null}
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-[1.2fr_0.85fr] lg:gap-12">
-        <div>
+      <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.85fr)] lg:gap-12">
+        <div className="min-w-0">
           <CarListingGallery
             images={
               car.images.length > 0
@@ -316,7 +316,7 @@ export default async function CarDetailPage({ params }: Props) {
         </div>
         <div
           id="listing-lead-form"
-          className="scroll-mt-28 lg:sticky lg:top-24 lg:self-start"
+          className="min-w-0 scroll-mt-28 lg:sticky lg:top-24 lg:self-start"
         >
           {car.category.slug === CERTIFIED_CATEGORY_SLUG ? (
             <CertifiedTestDriveForm carId={car.id} />

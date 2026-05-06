@@ -86,11 +86,11 @@ export function CarListingGallery({
   const altFor = (im: CarGalleryImage) => im.alt ?? fallbackAlt;
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       <button
         type="button"
         onClick={() => openAt(0)}
-        className="group relative block aspect-[4/3] w-full overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-card outline-none ring-offset-2 ring-offset-background transition-shadow focus-visible:ring-2 focus-visible:ring-brand/40"
+        className="group relative block aspect-[4/3] w-full max-w-full overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-card outline-none ring-offset-2 ring-offset-background transition-shadow focus-visible:ring-2 focus-visible:ring-brand/40"
         aria-label={`View larger featured photo — ${altFor(primary)}`}
       >
         <Image
