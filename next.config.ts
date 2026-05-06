@@ -3,6 +3,16 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(process.cwd()),
+  // Keep native/WASM image deps as plain runtime requires instead of bundling.
+  // Without this, webpack walks libheif-js's WASM bundle, which (a) emits
+  // "Critical dependency: require function..." warnings, and (b) inflates
+  // build memory enough to OOM-kill the Next build worker on small droplets.
+  serverExternalPackages: [
+    "sharp",
+    "heic-convert",
+    "heic-decode",
+    "libheif-js",
+  ],
   experimental: {
     serverActions: {
       // Default is 1 MB; car forms upload multiple images (10 MB each per
