@@ -10,6 +10,13 @@ import { prisma } from "@/lib/db";
 import { syncCarTags } from "@/lib/syncCarTags";
 import { storeUploadedImage } from "@/lib/upload";
 
+/**
+ * Canonical shape for paths produced by `storeUploadedImage`. Used to validate
+ * `imagePaths` form values supplied by the new-car form (which pre-uploads
+ * images via the dedicated route handler so the picker can show progress + ETA).
+ */
+const UPLOADED_IMAGE_PATH_RE = /^\/uploads\/images\/[a-f0-9]{32}\.[a-z0-9]+$/i;
+
 async function applyFeaturedImageForCar(carId: string, formData: FormData) {
   const rows = await prisma.carImage.findMany({
     where: { carId },
@@ -109,23 +116,21 @@ export async function createCarAction(formData: FormData) {
     },
   });
 
-  const files = formData
-    .getAll("images")
-    .filter((f): f is File => f instanceof File && f.size > 0);
+  // The new-car form pre-uploads each image to /api/admin/uploads/car-image
+  // and submits the resulting paths as hidden inputs, so we can read them
+  // straight from the form. We still validate every path against the regex
+  // produced by `storeUploadedImage` to prevent a tampered submit from writing
+  // arbitrary `CarImage.path` values.
+  const paths = formData
+    .getAll("imagePaths")
+    .map((v) => String(v).trim())
+    .filter((p) => UPLOADED_IMAGE_PATH_RE.test(p));
 
-  const rawFeaturedIdx = String(formData.get("featuredImageIndex") ?? "0").trim();
-  let featuredIdx = parseInt(rawFeaturedIdx, 10);
-  if (Number.isNaN(featuredIdx)) featuredIdx = 0;
-
-  const paths: string[] = [];
-  for (const file of files) {
-    const pathStr = await storeUploadedImage(file);
-    if (!pathStr) continue;
-    paths.push(pathStr);
-  }
+  const featuredPath = String(formData.get("featuredImagePath") ?? "").trim();
+  let featuredIdx = paths.indexOf(featuredPath);
+  if (featuredIdx < 0) featuredIdx = 0;
 
   if (paths.length > 0) {
-    featuredIdx = Math.max(0, Math.min(paths.length - 1, featuredIdx));
     for (let i = 0; i < paths.length; i++) {
       await prisma.carImage.create({
         data: {

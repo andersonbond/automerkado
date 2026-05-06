@@ -4,17 +4,18 @@ import {
   ArrowLeft,
   Banknote,
   Car,
-  CheckCircle2,
   ImagePlus,
   Megaphone,
   Tag,
 } from "lucide-react";
 import Link from "next/link";
-import { AdminSubmitButton } from "@/components/admin/admin-submit-button";
+import {
+  CarCreateForm,
+  CarCreateSubmitButton,
+} from "@/components/admin/car-create-form";
 import { CarImagesFilePicker } from "@/components/admin/car-images-file-picker";
 import { PhpFormattedPriceInput } from "@/components/admin/php-formatted-price-input";
 import { prisma } from "@/lib/db";
-import { createCarAction } from "@/lib/actions/cars";
 
 const inputClass =
   "mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground shadow-sm outline-none transition placeholder:text-muted focus:border-brand/50 focus:ring-2 focus:ring-brand/15";
@@ -76,10 +77,7 @@ export default async function NewCarPage({
           </div>
         ) : null}
 
-        <form
-          action={createCarAction}
-          className="mt-8 overflow-hidden rounded-2xl border border-surface/90 bg-card shadow-card ring-1 ring-black/[0.04]"
-        >
+        <CarCreateForm className="mt-8 overflow-hidden rounded-2xl border border-surface/90 bg-card shadow-card ring-1 ring-black/[0.04]">
           <div
             className="h-1 w-full bg-gradient-to-r from-brand via-brand/75 to-brand/40"
             aria-hidden
@@ -233,13 +231,7 @@ export default async function NewCarPage({
               can appear on the public site.
             </p>
             <div className="flex flex-wrap gap-3">
-              <AdminSubmitButton
-                pendingLabel="Creating…"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-6 py-2.5 text-sm font-semibold text-brand-foreground shadow-md shadow-brand/20 transition hover:opacity-95 active:scale-[0.98] disabled:hover:opacity-70"
-              >
-                <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
-                Create car
-              </AdminSubmitButton>
+              <CarCreateSubmitButton className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-6 py-2.5 text-sm font-semibold text-brand-foreground shadow-md shadow-brand/20 transition hover:opacity-95 active:scale-[0.98] disabled:hover:opacity-70" />
               <Link
                 href="/admin/cars"
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-surface bg-card px-6 py-2.5 text-sm font-semibold text-foreground shadow-sm transition hover:bg-surface/80"
@@ -249,7 +241,7 @@ export default async function NewCarPage({
               </Link>
             </div>
           </div>
-        </form>
+        </CarCreateForm>
       </div>
     </div>
   );
