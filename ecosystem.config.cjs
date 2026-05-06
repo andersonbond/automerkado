@@ -14,6 +14,11 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: 3000,
+        // Raise V8's old-generation heap from the default ~1.5 GB so multi-image
+        // car uploads (multipart body + per-file Buffer + sharp pixel scratch)
+        // don't OOM. PM2's `node_args` is ignored because `script: "npm"` —
+        // NODE_OPTIONS is the env hook Node honors regardless of launcher.
+        NODE_OPTIONS: "--max-old-space-size=2048",
       },
     },
   ],

@@ -69,7 +69,7 @@ export default function ContactPage() {
                 href="mailto:support@automerkado.local"
                 className="font-semibold text-brand underline-offset-4 hover:underline"
               >
-                support@automerkado.local
+                support@automerkado.ph
               </a>
             </p>
             <p className="mt-3 text-sm leading-relaxed text-muted">
