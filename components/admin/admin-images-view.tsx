@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { DeleteImageConfirm } from "@/components/admin/delete-image-confirm";
 import { createStandaloneImageAction } from "@/lib/actions/images";
-import { isPublicUploadPath } from "@/lib/nextImage";
+import { isPublicUploadPath, listingThumbForUploadPath } from "@/lib/nextImage";
 
 export type AdminImagesViewImage = {
   id: string;
@@ -198,9 +198,11 @@ export function AdminImagesView({
                     >
                       <div className="relative aspect-[4/3] bg-surface">
                         <Image
-                          src={im.path}
+                          src={listingThumbForUploadPath(im.path) ?? im.path}
                           alt={thumbAlt}
                           fill
+                          loading="lazy"
+                          decoding="async"
                           className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 320px"
                           unoptimized={isPublicUploadPath(im.path)}

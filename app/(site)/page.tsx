@@ -21,7 +21,7 @@ import { getRepossessedListingExpiresAtIso } from "@/lib/repossessedListing";
 import { absoluteUrl } from "@/lib/site";
 import { HeroBackdropMedia } from "@/components/landing/hero-backdrop-media";
 import { getHeroVisualConfig } from "@/lib/siteHero";
-import { isPublicUploadPath } from "@/lib/nextImage";
+import { isPublicUploadPath, listingThumbForUploadPath } from "@/lib/nextImage";
 
 export const metadata: Metadata = {
   title: "Certified & repossessed cars in the Philippines",
@@ -206,6 +206,12 @@ export default async function HomePage() {
               car.category.slug,
               car.createdAt,
             );
+            // Use the small WebP thumb generated at upload (same approach as
+            // CarGrid). Featured cards are ~33vw on desktop and full-width on
+            // mobile — well within the 800px thumb size at q=78.
+            const cardSrc = firstIm?.path
+              ? (listingThumbForUploadPath(firstIm.path) ?? firstIm.path)
+              : null;
             return (
               <li key={car.id}>
                 <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/20 hover:shadow-card-hover">
@@ -214,12 +220,14 @@ export default async function HomePage() {
                     className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     <div className="relative aspect-[16/10] overflow-hidden bg-surface">
-                      {firstIm?.path ? (
+                      {cardSrc ? (
                         <Image
-                          src={firstIm.path}
-                          alt={firstIm.alt ?? car.title}
+                          src={cardSrc}
+                          alt={firstIm?.alt ?? car.title}
                           fill
-                          unoptimized={isPublicUploadPath(firstIm.path)}
+                          unoptimized={isPublicUploadPath(cardSrc)}
+                          loading="lazy"
+                          decoding="async"
                           className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                           sizes="(max-width: 768px) 100vw, 33vw"
                         />

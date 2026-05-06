@@ -4,7 +4,21 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useCallback, useEffect, useId, useState } from "react";
 import { ListingPhotoPlaceholder } from "@/components/cars/listing-photo-placeholder";
-import { isPublicUploadPath } from "@/lib/nextImage";
+import { isPublicUploadPath, listingThumbForUploadPath } from "@/lib/nextImage";
+
+/**
+ * Hero + strip thumbs display the small WebP thumb (`<hash>_thumb.webp`,
+ * generated at upload by `writeListingThumbnail` in lib/upload.ts). Hero is
+ * ~720px CSS wide on desktop and the thumb is 800px wide @ q=78 — visually
+ * indistinguishable for a car listing hero. The lightbox keeps the original
+ * so zooming in still has full resolution.
+ *
+ * Falls back to the original `.path` when no thumb URL can be derived
+ * (legacy or non-`/uploads/images/<hex>.<ext>` paths).
+ */
+function previewSrc(path: string): string {
+  return listingThumbForUploadPath(path) ?? path;
+}
 
 export type CarGalleryImage = {
   id: string;
@@ -94,13 +108,15 @@ export function CarListingGallery({
         aria-label={`View larger featured photo — ${altFor(primary)}`}
       >
         <Image
-          src={primary.path}
+          src={previewSrc(primary.path)}
           alt={altFor(primary)}
           fill
           unoptimized={isPublicUploadPath(primary.path)}
           className="object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02] group-focus-visible:scale-[1.02]"
           sizes={heroSizes}
           priority
+          fetchPriority="high"
+          decoding="async"
         />
         {list.length > 1 ? (
           <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
@@ -130,10 +146,12 @@ export function CarListingGallery({
                   aria-label={`View larger — ${altFor(im)}`}
                 >
                   <Image
-                    src={im.path}
+                    src={previewSrc(im.path)}
                     alt={altFor(im)}
                     fill
                     unoptimized={isPublicUploadPath(im.path)}
+                    loading="lazy"
+                    decoding="async"
                     className="object-cover"
                     sizes={thumbSizes}
                   />

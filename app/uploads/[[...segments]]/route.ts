@@ -7,7 +7,12 @@ import { resolvePublicUploadsPath } from "@/lib/appDeployRoot";
 
 export const runtime = "nodejs";
 
-const IMAGE_RE = /^[a-f0-9]{32}\.(jpe?g|png|webp)$/i;
+/**
+ * Allows the original `<32-hex>.<ext>` filename plus the listing-grid thumb
+ * variant `<32-hex>_thumb.webp` produced by `writeListingThumbnail` in
+ * `lib/upload.ts`. Thumbs are always WebP regardless of the original format.
+ */
+const IMAGE_RE = /^[a-f0-9]{32}(?:_thumb\.webp|\.(?:jpe?g|png|webp))$/i;
 const FILE_RE = /^[a-f0-9]{32}\.(pdf|txt|jpe?g|png|webp)$/i;
 const SITE_RE =
   /^(site-logo\.(jpe?g|png|webp)|hero-bg\.(jpe?g|png|webp|mp4|webm|mov))$/i;

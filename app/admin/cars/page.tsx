@@ -10,7 +10,7 @@ import {
   countAdminCars,
   listAdminCars,
 } from "@/lib/repositories/carRepository";
-import { isPublicUploadPath } from "@/lib/nextImage";
+import { isPublicUploadPath, listingThumbForUploadPath } from "@/lib/nextImage";
 
 function buildCarsListUrl(page: number, q: string) {
   const params = new URLSearchParams();
@@ -264,17 +264,23 @@ function CarThumb({ path, title }: { path?: string; title: string }) {
       </div>
     );
   }
+  // Use the small WebP thumb generated at upload (lib/upload.ts). 56px row
+  // thumb only needs ~56px CSS, so the 800px thumb is more than enough and
+  // avoids loading multi-MB originals on every admin/cars table render.
+  const src = listingThumbForUploadPath(path) ?? path;
   return (
     <div
       className="relative shrink-0 overflow-hidden rounded-lg border border-surface bg-surface/30"
       style={{ width: size, height: size }}
     >
       <Image
-        src={path}
+        src={src}
         alt=""
         width={size}
         height={size}
-        unoptimized={isPublicUploadPath(path)}
+        unoptimized={isPublicUploadPath(src)}
+        loading="lazy"
+        decoding="async"
         className="h-full w-full object-cover"
         sizes="56px"
       />

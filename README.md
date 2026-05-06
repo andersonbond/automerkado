@@ -59,6 +59,30 @@ Optional static assets can live under **`public/`** (e.g. **`public/car_images/`
 - **`AUTOMERKADO_APP_ROOT`** (optional, in `.env`): absolute path to the repo root (directory that contains `public/` and `package.json`). Sets where listing images and uploads are **written** and is used by the **`/uploads/...`** handler so reads match writes if `process.cwd()` is wrong under PM2/systemd.
 - **Nginx**: if you serve `/uploads/` with `root` at the **repo** root, requests look for `./uploads/...` instead of **`./public/uploads/...`** and return 404. Prefer **`location / { proxy_pass http://127.0.0.1:3000; }`** for all traffic, **or** use `alias /home/.../automerkado/public/uploads/;` (with trailing slash rules) under `location ^~ /uploads/`.
 - **Cloudflare**: use a Cache Rule to **Bypass** cache for **`/uploads/*`** so stale HTML 404s are not reused for image URLs.
+- **Listing-grid thumbnails**: each upload writes a small `<hash>_thumb.webp` next to the original. The grid (`/listings/*`) loads the thumb so total page weight is ~1 MB instead of dozens of MB. After deploying the grid-thumb change for the first time, run **`npm run backfill:listing-thumbnails`** on the server (already wired into `deploy.sh`) so legacy uploads also get thumbs.
+
+## Deploy from macOS (`./deploy.sh`)
+
+For production you can **build on your Mac** (avoids OOM on small Linux VPS during `next build`) and **rsync** the tree to the server, then install Linux-native dependencies and restart PM2.
+
+1. **Once:** edit `deploy.sh` and set `REMOTE` (e.g. `appuser@your-server-ip`) and `DEST` (app directory on the server, e.g. `/home/appuser/automerkado`).
+2. **Once:** `chmod +x deploy.sh`
+3. **Once on the server:** run PM2 as **`appuser`** (not root), e.g. `pm2 start ecosystem.config.cjs && pm2 save` from `DEST`. Future deploys use `pm2 restart automerkado` from the script.
+4. **SSH:** passwordless key login to `REMOTE` so `rsync` and `ssh` in the script do not hang on prompts.
+
+Then from the project root on your Mac:
+
+```bash
+./deploy.sh
+```
+
+What it does:
+
+1. Runs **`npm run build`** locally (Prisma generate/migrate against your dev DB, then Next production build).
+2. **`rsync -avz --delete`** from the repo root to `REMOTE:$DEST/`, excluding among other things `.git`, `.env*`, `node_modules`, `.next/cache`, `prisma/*.db*`, and **`public/uploads`** (production uploads stay on the server).
+3. **`ssh`** into the server: `npm ci`, `npx prisma migrate deploy`, `pm2 restart automerkado`.
+
+**Git workflow:** merge and push **`main`** from your Mac (and `origin`). Deploy does **not** rely on `git pull` on the server; the server tree is updated by rsync and may differ from a `git status` checkout there—that is normal if you keep a clone on the box only for convenience.
 
 ## Demo accounts (from seed)
 
@@ -86,6 +110,8 @@ When a user places a valid bid, the app attempts to send email via SMTP. If `SMT
 | `npm run db:seed`  | Run `scripts/seed.ts`      |
 | `npm run db:reset` | Reset DB + migrate + seed  |
 | `npm run worker:repossessed-expiry` | Deactivate expired LISTED repossessed listings (scheduled worker) |
+| `npm run backfill:listing-thumbnails` | Generate `_thumb.webp` variants for any `CarImage` that's missing one (idempotent; safe to re-run) |
+| `./deploy.sh` | macOS → production rsync deploy (see **Deploy from macOS** above); requires local `REMOTE` / `DEST` edits |
 
 ### Repossessed listing expiry (production cron)
 

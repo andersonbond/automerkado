@@ -19,7 +19,7 @@ import { PhpFormattedPriceInput } from "@/components/admin/php-formatted-price-i
 import { DeleteCarConfirm } from "@/components/admin/delete-car-confirm";
 import { updateCarAction } from "@/lib/actions/cars";
 import { prisma } from "@/lib/db";
-import { isPublicUploadPath } from "@/lib/nextImage";
+import { isPublicUploadPath, listingThumbForUploadPath } from "@/lib/nextImage";
 
 const editCarPageInclude = {
   category: true,
@@ -407,10 +407,11 @@ function EditCarGallery({
       <div className="relative aspect-[4/3] w-full bg-gradient-to-br from-surface/80 to-surface/40">
         {heroPath ? (
           <Image
-            src={heroPath}
+            src={listingThumbForUploadPath(heroPath) ?? heroPath}
             alt={images.find((i) => i.path === heroPath)?.alt ?? title}
             fill
             unoptimized={isPublicUploadPath(heroPath)}
+            decoding="async"
             className="object-cover"
             sizes="(max-width: 1024px) 100vw, 380px"
             priority
@@ -449,10 +450,12 @@ function EditCarGallery({
                     />
                     <span className="relative block aspect-square overflow-hidden rounded-lg border-2 border-surface/80 bg-surface/30 ring-1 ring-black/[0.03] transition peer-checked:border-brand peer-checked:ring-2 peer-checked:ring-brand/20 hover:border-brand/35">
                       <Image
-                        src={im.path}
+                        src={listingThumbForUploadPath(im.path) ?? im.path}
                         alt={im.alt ?? ""}
                         fill
                         unoptimized={isPublicUploadPath(im.path)}
+                        loading="lazy"
+                        decoding="async"
                         className="object-cover"
                         sizes="96px"
                       />

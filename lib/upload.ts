@@ -5,6 +5,25 @@ import heicConvert from "heic-convert";
 import sharp from "sharp";
 import { resolvePublicUploadsPath } from "@/lib/appDeployRoot";
 
+/**
+ * Width (px) of the listing-grid thumbnail variant generated on upload.
+ * Sized for the largest column in the grid (~400px CSS) at 2× DPR. WebP at
+ * q=78 typically lands at 30–80 KB per thumb, vs. multi-MB originals — drops
+ * /listings page weight by ~99% and keeps the main thread free of big JPEG
+ * decodes when admins click the logo while the grid is still loading.
+ */
+const LISTING_THUMB_WIDTH = 800;
+const LISTING_THUMB_QUALITY = 78;
+/** Suffix kept stable so the URL helper + uploads route allow-list match. */
+export const LISTING_THUMB_SUFFIX = "_thumb";
+
+export type StoredImage = {
+  /** `/uploads/images/<hex>.<ext>` — full-size original (used by detail gallery, admin). */
+  path: string;
+  /** `/uploads/images/<hex>_thumb.webp` — listing grid thumbnail. Optional in case sharp errors. */
+  thumbPath: string | null;
+};
+
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 /**
  * iPhone/iPad photos. Browsers other than Safari can't render HEIC/HEIF, so we
@@ -49,7 +68,52 @@ function isHeifFile(file: File): boolean {
   return /\.(heic|heif)$/i.test(file.name);
 }
 
-export async function storeUploadedImage(file: File): Promise<string | null> {
+/**
+ * Generates a small, web-friendly listing-grid thumbnail and writes it next
+ * to the original. Returns the public `/uploads/...` URL on success, or null
+ * if sharp throws (we accept the original-only result rather than failing the
+ * whole upload).
+ *
+ * The thumb path is derived from the original filename so that:
+ *   /uploads/images/abc123.jpg  ->  /uploads/images/abc123_thumb.webp
+ * and the same scheme can be used for backfill against existing originals
+ * without a DB migration.
+ */
+export async function writeListingThumbnail(
+  originalDiskPath: string,
+  originalRelPath: string,
+  sourceBuf?: Buffer,
+): Promise<string | null> {
+  try {
+    const baseName = path.basename(
+      originalRelPath,
+      path.extname(originalRelPath),
+    );
+    const thumbName = `${baseName}${LISTING_THUMB_SUFFIX}.webp`;
+    const thumbDisk = path.join(path.dirname(originalDiskPath), thumbName);
+    const thumbRel = `${path.dirname(originalRelPath)}/${thumbName}`;
+
+    const input = sourceBuf ?? originalDiskPath;
+    await sharp(input, { failOn: "none" })
+      .rotate()
+      .resize({ width: LISTING_THUMB_WIDTH, withoutEnlargement: true })
+      .webp({ quality: LISTING_THUMB_QUALITY })
+      .toFile(thumbDisk);
+
+    return thumbRel;
+  } catch (err) {
+    console.error("[upload] thumbnail generation failed", err);
+    return null;
+  }
+}
+
+/**
+ * Stores the original full-size image AND a small listing-grid thumbnail.
+ * Returns both paths so the new-car upload route can plumb them through.
+ */
+export async function storeUploadedImageWithThumb(
+  file: File,
+): Promise<StoredImage | null> {
   const heif = isHeifFile(file);
   if (!heif && !IMAGE_TYPES.has(file.type)) return null;
 
@@ -118,7 +182,15 @@ export async function storeUploadedImage(file: File): Promise<string | null> {
   const disk = path.join(resolvePublicUploadsPath("images"), name);
   await mkdir(path.dirname(disk), { recursive: true });
   await writeFile(disk, outBuf);
-  return rel;
+
+  const thumbPath = await writeListingThumbnail(disk, rel, outBuf);
+  return { path: rel, thumbPath };
+}
+
+/** Back-compat shim: existing callers only need the original path. */
+export async function storeUploadedImage(file: File): Promise<string | null> {
+  const stored = await storeUploadedImageWithThumb(file);
+  return stored?.path ?? null;
 }
 
 export async function storeUploadedFile(file: File): Promise<string | null> {

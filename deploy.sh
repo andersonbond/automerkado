@@ -19,11 +19,12 @@ rsync -avz --delete \
   --exclude='terminals' \
   ./ "$REMOTE:$DEST/"
 
-echo "→ Installing deps + migrating + restarting"
+echo "→ Installing deps + migrating + backfilling thumbs + restarting"
 ssh "$REMOTE" "
   cd $DEST &&
   npm ci &&
   npx prisma migrate deploy &&
+  npm run backfill:listing-thumbnails &&
   pm2 restart automerkado
 "
 

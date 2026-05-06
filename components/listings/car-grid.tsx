@@ -4,7 +4,7 @@ import { ListingPhotoPlaceholder } from "@/components/cars/listing-photo-placeho
 import type { Prisma } from "@prisma/client";
 import { RepossessedListingCountdownCard } from "@/components/listings/repossessed-listing-countdown";
 import { getRepossessedListingExpiresAtIso } from "@/lib/repossessedListing";
-import { isPublicUploadPath } from "@/lib/nextImage";
+import { isPublicUploadPath, listingThumbForUploadPath } from "@/lib/nextImage";
 
 type CarRow = {
   id: string;
@@ -48,6 +48,14 @@ export function CarGrid({
           car.category.slug,
           car.createdAt,
         );
+        // Use the small WebP thumb generated alongside the original at upload
+        // time (`writeListingThumbnail` in lib/upload.ts). Cuts grid byte
+        // weight ~99% vs. linking to multi-MB originals — the original UX bug
+        // was clicking the logo while heavy JPEGs decoded on the main thread.
+        // Falls back to the original for legacy or non-uploads paths.
+        const cardSrc = firstIm?.path
+          ? (listingThumbForUploadPath(firstIm.path) ?? firstIm.path)
+          : null;
         return (
           <li key={car.id}>
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/25 hover:shadow-card-hover">
@@ -56,12 +64,14 @@ export function CarGrid({
                 className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <div className="relative aspect-[16/10] overflow-hidden bg-surface">
-                  {firstIm?.path ? (
+                  {cardSrc ? (
                     <Image
-                      src={firstIm.path}
-                      alt={firstIm.alt ?? car.title}
+                      src={cardSrc}
+                      alt={firstIm?.alt ?? car.title}
                       fill
-                      unoptimized={isPublicUploadPath(firstIm.path)}
+                      unoptimized={isPublicUploadPath(cardSrc)}
+                      loading="lazy"
+                      decoding="async"
                       className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
