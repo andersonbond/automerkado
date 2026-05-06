@@ -6,6 +6,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const labelClass =
   "flex cursor-pointer flex-col rounded-xl border-2 border-dashed border-surface/90 bg-surface/25 px-5 py-8 text-center transition hover:border-brand/40 hover:bg-brand/[0.03]";
 
+/**
+ * Hard ceiling for the initial create-car upload. The server has no matching
+ * cap (per product decision), so we rely on this client-side guard to keep the
+ * total payload comfortably under the 120 MB body limit.
+ */
+const MAX_IMAGES_PER_LISTING = 20;
+
 type Preview = {
   url: string;
   name: string;
@@ -21,7 +28,9 @@ function detectHeic(file: File): boolean {
 export function CarImagesFilePicker() {
   const [previews, setPreviews] = useState<Preview[]>([]);
   const [featuredIndex, setFeaturedIndex] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const urlsRef = useRef<string[]>([]);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const revokeAll = useCallback(() => {
     urlsRef.current.forEach((u) => URL.revokeObjectURL(u));
@@ -40,8 +49,17 @@ export function CarImagesFilePicker() {
 
   function onChange(e: React.ChangeEvent<HTMLInputElement>) {
     revokeAll();
+    setError(null);
     const files = e.target.files;
     if (!files?.length) {
+      setPreviews([]);
+      return;
+    }
+    if (files.length > MAX_IMAGES_PER_LISTING) {
+      setError(
+        `You picked ${files.length} images. Maximum is ${MAX_IMAGES_PER_LISTING} per listing — please choose ${MAX_IMAGES_PER_LISTING} or fewer.`,
+      );
+      if (inputRef.current) inputRef.current.value = "";
       setPreviews([]);
       return;
     }
@@ -66,9 +84,10 @@ export function CarImagesFilePicker() {
           Upload images
         </span>
         <span className="mt-1 text-xs text-muted">
-          JPEG, PNG, WebP, or HEIC · iPhone HEIC photos auto-convert to JPEG
+          JPEG, PNG, WebP, or HEIC · up to {MAX_IMAGES_PER_LISTING} photos · iPhone HEIC photos auto-convert to JPEG
         </span>
         <input
+          ref={inputRef}
           name="images"
           type="file"
           accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
@@ -77,6 +96,15 @@ export function CarImagesFilePicker() {
           className="mt-5 block w-full text-xs text-muted file:mx-auto file:cursor-pointer file:rounded-lg file:border-0 file:bg-brand file:px-5 file:py-2.5 file:text-sm file:font-semibold file:text-brand-foreground file:shadow-sm hover:file:opacity-95"
         />
       </label>
+
+      {error ? (
+        <p
+          className="rounded-lg border border-red-200 bg-red-50/90 px-3 py-2 text-xs font-medium text-red-900"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
 
       {previews.length > 0 ? (
         <fieldset className="rounded-xl border border-surface/80 bg-surface/20 p-4">
