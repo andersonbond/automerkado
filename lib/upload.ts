@@ -1,9 +1,16 @@
 import { randomBytes } from "crypto";
 import { mkdir, readdir, unlink, writeFile } from "fs/promises";
 import path from "path";
+import heicConvert from "heic-convert";
+import sharp from "sharp";
 import { resolvePublicUploadsPath } from "@/lib/appDeployRoot";
 
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+/**
+ * iPhone/iPad photos. Browsers other than Safari can't render HEIC/HEIF, so we
+ * accept them at upload but transcode to JPEG before persisting.
+ */
+const HEIF_IMAGE_TYPES = new Set(["image/heic", "image/heif"]);
 const MAX_IMAGE = 10 * 1024 * 1024;
 const MAX_HERO_IMAGE = 10 * 1024 * 1024;
 /** Short looping hero clips (MP4 / WebM / MOV). */
@@ -32,15 +39,68 @@ function extForMime(mime: string) {
   return ".bin";
 }
 
+/**
+ * Detects HEIC/HEIF by MIME first, falling back to filename extension because
+ * some browsers (mostly desktop Chrome on Linux/Windows) send an empty `type`
+ * for `.heic` files dropped from the OS.
+ */
+function isHeifFile(file: File): boolean {
+  if (HEIF_IMAGE_TYPES.has(file.type)) return true;
+  return /\.(heic|heif)$/i.test(file.name);
+}
+
 export async function storeUploadedImage(file: File): Promise<string | null> {
-  if (!IMAGE_TYPES.has(file.type)) return null;
-  const buf = Buffer.from(await file.arrayBuffer());
-  if (buf.length > MAX_IMAGE) return null;
-  const name = randomBytes(16).toString("hex") + extForMime(file.type);
+  const heif = isHeifFile(file);
+  if (!heif && !IMAGE_TYPES.has(file.type)) return null;
+
+  const srcBuf = Buffer.from(await file.arrayBuffer());
+  if (srcBuf.length > MAX_IMAGE) return null;
+
+  let outBuf: Buffer;
+  let outExt: string;
+  if (heif) {
+    try {
+      // sharp's bundled libvips can read HEIF containers but lacks the HEVC
+      // decoder plugin, which is what iPhone HEIC photos use. heic-convert
+      // ships a WASM libde265 decoder so it works on any platform without
+      // extra system packages.
+      // heic-convert's runtime path spreads the input (`[...buffer]`) so it
+      // actually needs a Uint8Array even though `@types/heic-convert` declares
+      // `ArrayBufferLike`. Buffer extends Uint8Array, so passing srcBuf works
+      // — the cast just satisfies the (incorrect) typings.
+      const decoded = await heicConvert({
+        buffer: srcBuf as unknown as ArrayBufferLike,
+        format: "JPEG",
+        quality: 0.92,
+      });
+      // Re-encode through sharp to apply EXIF rotate (heic-convert preserves
+      // the orientation tag) and to take advantage of mozjpeg's smaller files.
+      outBuf = await sharp(Buffer.from(decoded), { failOn: "none" })
+        .rotate()
+        .jpeg({ quality: 85, mozjpeg: true })
+        .toBuffer();
+      outExt = ".jpg";
+    } catch (err) {
+      console.error("[upload] HEIC/HEIF transcode failed", err);
+      return null;
+    }
+  } else {
+    // JPEG/PNG/WebP go through sharp only to apply EXIF auto-rotate. Re-encodes
+    // in the original format so iPhone JPEGs (which commonly carry orientation
+    // tags) display upright on every browser without relying on CSS.
+    try {
+      outBuf = await sharp(srcBuf, { failOn: "none" }).rotate().toBuffer();
+    } catch {
+      outBuf = srcBuf;
+    }
+    outExt = extForMime(file.type);
+  }
+
+  const name = randomBytes(16).toString("hex") + outExt;
   const rel = `/uploads/images/${name}`;
   const disk = path.join(resolvePublicUploadsPath("images"), name);
   await mkdir(path.dirname(disk), { recursive: true });
-  await writeFile(disk, buf);
+  await writeFile(disk, outBuf);
   return rel;
 }
 
