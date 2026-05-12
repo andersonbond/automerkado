@@ -1,9 +1,35 @@
 import { randomBytes } from "crypto";
 import { mkdir, readdir, unlink, writeFile } from "fs/promises";
 import path from "path";
-import heicConvert from "heic-convert";
-import sharp from "sharp";
 import { resolvePublicUploadsPath } from "@/lib/appDeployRoot";
+
+/** CJS-style `export =` packages — runtime default may exist depending on loader. */
+type HeicConvertFn = typeof import("heic-convert");
+type SharpCtor = typeof import("sharp");
+
+let heicConvertPromise: Promise<HeicConvertFn> | null = null;
+let sharpPromise: Promise<SharpCtor> | null = null;
+
+async function getHeicConvert(): Promise<HeicConvertFn> {
+  heicConvertPromise ??= import("heic-convert").then((m) =>
+    normalizeCjsExport<HeicConvertFn>(m),
+  );
+  return heicConvertPromise;
+}
+
+async function getSharp(): Promise<SharpCtor> {
+  sharpPromise ??= import("sharp").then((m) => normalizeCjsExport<SharpCtor>(m));
+  return sharpPromise;
+}
+
+function normalizeCjsExport<T>(ns: unknown): T {
+  if (typeof ns === "function") return ns as T;
+  const maybeDefault =
+    typeof ns === "object" && ns !== null && "default" in ns
+      ? (ns as { default?: unknown }).default
+      : undefined;
+  return (maybeDefault ?? ns) as T;
+}
 
 /**
  * Width (px) of the listing-grid thumbnail variant generated on upload.
@@ -93,6 +119,7 @@ export async function writeListingThumbnail(
     const thumbDisk = path.join(path.dirname(originalDiskPath), thumbName);
     const thumbRel = `${path.dirname(originalRelPath)}/${thumbName}`;
 
+    const sharp = await getSharp();
     const input = sourceBuf ?? originalDiskPath;
     await sharp(input, { failOn: "none" })
       .rotate()
@@ -132,6 +159,7 @@ export async function storeUploadedImageWithThumb(
       // actually needs a Uint8Array even though `@types/heic-convert` declares
       // `ArrayBufferLike`. Buffer extends Uint8Array, so passing srcBuf works
       // — the cast just satisfies the (incorrect) typings.
+      const heicConvert = await getHeicConvert();
       const decoded = await heicConvert({
         buffer: srcBuf as unknown as ArrayBufferLike,
         format: "JPEG",
@@ -139,7 +167,7 @@ export async function storeUploadedImageWithThumb(
       });
       // Re-encode through sharp to apply EXIF rotate (heic-convert preserves
       // the orientation tag) and to take advantage of mozjpeg's smaller files.
-      outBuf = await sharp(Buffer.from(decoded), { failOn: "none" })
+      outBuf = await (await getSharp())(Buffer.from(decoded), { failOn: "none" })
         .rotate()
         .jpeg({ quality: 85, mozjpeg: true })
         .toBuffer();
@@ -158,6 +186,7 @@ export async function storeUploadedImageWithThumb(
     // the original bytes display upright either way.
     let needsRotate = false;
     try {
+      const sharp = await getSharp();
       const meta = await sharp(srcBuf, { failOn: "none" }).metadata();
       const o = meta.orientation;
       needsRotate = typeof o === "number" && o > 1 && o <= 8;
@@ -167,7 +196,9 @@ export async function storeUploadedImageWithThumb(
 
     if (needsRotate) {
       try {
-        outBuf = await sharp(srcBuf, { failOn: "none" }).rotate().toBuffer();
+        outBuf = await (await getSharp())(srcBuf, { failOn: "none" })
+          .rotate()
+          .toBuffer();
       } catch {
         outBuf = srcBuf;
       }

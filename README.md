@@ -79,8 +79,8 @@ Then from the project root on your Mac:
 What it does:
 
 1. Runs **`npm run build`** locally (Prisma generate/migrate against your dev DB, then Next production build).
-2. **`rsync -avz --delete`** from the repo root to `REMOTE:$DEST/`, excluding among other things `.git`, `.env*`, `node_modules`, `.next/cache`, `prisma/*.db*`, and **`public/uploads`** (production uploads stay on the server).
-3. **`ssh`** into the server: **`npm install`**, **`npx prisma migrate deploy`**, **`npm run backfill:listing-thumbnails`**, **`pm2 restart automerkado`**. (The script uses `npm install` instead of `npm ci` to reduce OOM kills on small VPSes; always commit **`package-lock.json`**.)
+2. **`rsync -avz --delete`** from the repo root to `REMOTE:$DEST/`, excluding among other things `.git`, `.env*`, **`node_modules`**, **`.next`** (the app is **built on the Linux host** after sync), **`prisma/*.db*`, and **`public/uploads`** (production uploads stay on the server).
+3. **`ssh`**: **`npm install`**, **`npx prisma migrate deploy`**, **`rm -rf .next`**, **`npm run build`** (on the VPS, with capped Node heap for small RAM), **`npm run backfill:listing-thumbnails`**, **`pm2 restart automerkado`**. Swap (~2 GB) is recommended on **2 GB** RAM VPSes so **`npm`** / **`next build`** are not **OOM‑killed**. Always commit **`package-lock.json`**.
 
 **Git workflow:** merge and push **`main`** from your Mac (and `origin`). Deploy does **not** rely on `git pull` on the server; the server tree is updated by rsync and may differ from a `git status` checkout there—that is normal if you keep a clone on the box only for convenience.
 
