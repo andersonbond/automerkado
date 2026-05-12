@@ -80,7 +80,7 @@ What it does:
 
 1. Runs **`npm run build`** locally (Prisma generate/migrate against your dev DB, then Next production build).
 2. **`rsync -avz --delete`** from the repo root to `REMOTE:$DEST/`, excluding among other things `.git`, `.env*`, **`node_modules`**, **`.next`** (the app is **built on the Linux host** after sync), **`prisma/*.db*`, and **`public/uploads`** (production uploads stay on the server).
-3. **`ssh`**: **`npm install`**, **`npx prisma migrate deploy`**, **`rm -rf .next`**, **`npm run build`** (on the VPS, with capped Node heap for small RAM), **`npm run backfill:listing-thumbnails`**, **`pm2 restart automerkado`**. Swap (~2 GB) is recommended on **2 GB** RAM VPSes so **`npm`** / **`next build`** are not **OOM‑killed**. Always commit **`package-lock.json`**.
+3. **`ssh`**: **`npm install`**, **`npx prisma migrate deploy`**, **`pm2 stop`** (frees RAM on small VPS), **`rm -rf .next`**, **`npm run build:deploy`** (same as `build` but **`next build --no-lint`** to save memory), **`npm run backfill:listing-thumbnails`**, **`pm2 restart automerkado`**. Use **~2 GB swap** on **2 GB** RAM. Run builds as **`appuser`** (not root) so **`.next`** and **`prisma/*.db`** stay owned by the app user (root-owned **`.next`** causes **`EACCES`** for `appuser`). Always commit **`package-lock.json`**.
 
 **Git workflow:** merge and push **`main`** from your Mac (and `origin`). Deploy does **not** rely on `git pull` on the server; the server tree is updated by rsync and may differ from a `git status` checkout there—that is normal if you keep a clone on the box only for convenience.
 
@@ -103,6 +103,7 @@ When a user places a valid bid, the app attempts to send email via SMTP. If `SMT
 | ------------------ | -------------------------- |
 | `npm run dev`      | Development server         |
 | `npm run build`    | Production build           |
+| `npm run build:deploy` | Same as **`build`** but skips Next’s build-time ESLint (**`next build --no-lint`**) — use on small VPS to reduce **`next build`** memory |
 | `npm run start`    | Start production server    |
 | `npm run install:ci` | Same as `npm ci` (use on servers after pull) |
 | `npm run lint`     | ESLint                     |
@@ -160,9 +161,20 @@ Then run `npm run dev` again. If it still fails, remove `node_modules` and `pack
 
 This app does **not** use `next/font/google` so first compile does not wait on Google Fonts. If you still see timeouts, Next is probably using the **WASM SWC fallback** (slow first compile)—fix the native SWC binary with the steps above, or wait for the first request to finish after retries.
 
-### Deploy: `Killed` during `npm` on the VPS
+### Deploy: `EACCES` / `permission denied` under `.next`
 
-Linux **OOM killer** (common on 1–2 GB RAM without swap). **`./deploy.sh`** runs **`npm install`** incrementally to reduce spikes; if installs still die, add **~2 GB swap** on the droplet (see comments in **`deploy.sh`**) or bump RAM for a large dependency upgrade.
+Some files were created as **root** (e.g. **`npm run build`** while logged in as root). The app and PM2 should run as **`appuser`**. Fix once:
+
+```bash
+sudo chown -R appuser:appuser /home/appuser/automerkado
+sudo -u appuser rm -rf /home/appuser/automerkado/.next
+```
+
+Then build only as **`appuser`**, not root.
+
+### Deploy: `Killed` / **`Next.js build worker exited ... signal: SIGKILL`** on the VPS
+
+Same family: Linux **OOM killer** (RAM + no swap). Prefer **~2 GB swap**, use **`npm run build:deploy`** (skips build-time lint), stop the running app during **`next build`** (**`./deploy.sh`** does **`pm2 stop`** first), and keep **`eslint`** on your Mac/CI with **`npm run lint`**. **`./deploy.sh`** also uses **`npm install`** incrementally to reduce install spikes.
 
 ## License
 

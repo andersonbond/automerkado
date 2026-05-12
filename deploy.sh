@@ -27,7 +27,8 @@ rsync -avz --delete \
 
 echo "→ Installing deps + building on Linux + migrating + backfilling + restarting"
 # `npm ci` wipes node_modules every time and spikes RAM; `npm install` is incremental and usually survives small hosts.
-# Build must run on the VPS (see `.next` rsync exclude). Ensure swap (~2G) on 2GB RAM or this step may be OOM-killed.
+# Build must run on the VPS (see `.next` rsync exclude). Uses `build:deploy` (`next build --no-lint`) to save RAM.
+# Stops PM2 during the build so Node isn’t competing with the running app on a 2GB box. Ensure swap (~2G) or OOM may SIGKILL the build worker.
 ssh "$REMOTE" "
   set -euo pipefail
   cd $DEST &&
@@ -35,9 +36,10 @@ ssh "$REMOTE" "
   export NPM_CONFIG_FUND=false &&
   npm install &&
   npx prisma migrate deploy &&
+  pm2 stop automerkado 2>/dev/null || true &&
   rm -rf .next &&
   export NODE_OPTIONS='--max-old-space-size=1536' &&
-  npm run build &&
+  npm run build:deploy &&
   npm run backfill:listing-thumbnails &&
   pm2 restart automerkado
 "
