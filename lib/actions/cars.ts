@@ -148,6 +148,7 @@ export async function createCarAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/listings/certified");
   revalidatePath("/listings/repossessed");
+  revalidatePath("/listings/all");
   revalidatePath(`/listings/${finalSlug}`);
   revalidatePath("/admin/cars");
   revalidatePath(`/admin/cars/${car.id}/edit`);
@@ -214,6 +215,7 @@ export async function updateCarAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/listings/certified");
   revalidatePath("/listings/repossessed");
+  revalidatePath("/listings/all");
   revalidatePath(`/listings/${data.slug}`);
   revalidatePath("/admin/cars");
   redirect("/admin/cars");
@@ -227,6 +229,7 @@ export async function deleteCarAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/listings/certified");
   revalidatePath("/listings/repossessed");
+  revalidatePath("/listings/all");
   revalidatePath("/admin/cars");
   redirect("/admin/cars");
 }

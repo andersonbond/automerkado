@@ -98,7 +98,7 @@ export default async function HomePage() {
           <div className="mt-5 max-w-2xl sm:mt-7">
             <div className="rounded-2xl border border-white/15 bg-white p-2 shadow-soft sm:p-2">
               <form
-                action="/listings/certified"
+                action="/listings/all"
                 method="get"
                 className="flex flex-col gap-2 sm:flex-row sm:items-stretch"
                 role="search"

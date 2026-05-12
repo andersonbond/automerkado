@@ -4,6 +4,8 @@ import { deactivateExpiredRepossessedListings } from "@/lib/services/repossessed
 
 export type CarListFilters = {
   categorySlug?: string;
+  /** If set (non-empty), restricts to these category slugs; overrides `categorySlug`. */
+  categorySlugs?: readonly string[];
   brand?: string;
   search?: string;
   tagSlug?: string;
@@ -22,7 +24,9 @@ export function buildCarWhere(
     status: "LISTED",
   };
 
-  if (filters.categorySlug) {
+  if (filters.categorySlugs && filters.categorySlugs.length > 0) {
+    where.category = { slug: { in: [...filters.categorySlugs] } };
+  } else if (filters.categorySlug) {
     where.category = { slug: filters.categorySlug };
   }
 
@@ -183,18 +187,25 @@ export async function listAdminCars(params: {
   });
 }
 
-/** Tags that appear on at least one LISTED car in this category (for listing filters). */
-export async function listTagsForCategoryListing(categorySlug: string) {
+/** Tags that appear on at least one LISTED car in any of these categories (for listing filters). */
+export async function listTagsForCategoriesListing(
+  categorySlugs: readonly string[],
+) {
+  if (categorySlugs.length === 0) return [];
   return prisma.tag.findMany({
     where: {
       cars: {
         some: {
           status: "LISTED",
-          category: { slug: categorySlug },
+          category: { slug: { in: [...categorySlugs] } },
         },
       },
     },
     select: { slug: true, name: true },
     orderBy: { name: "asc" },
   });
+}
+
+export async function listTagsForCategoryListing(categorySlug: string) {
+  return listTagsForCategoriesListing([categorySlug]);
 }

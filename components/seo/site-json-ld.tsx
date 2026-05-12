@@ -1,7 +1,7 @@
 import { absoluteUrl, siteUrl } from "@/lib/site";
 import { getSiteLogoSrc } from "@/lib/siteLogo";
 
-/** Organization + WebSite with search action (hero search uses `q` on certified listings). */
+/** Organization + WebSite with search action (hero search uses `q` on `/listings/all`). */
 export async function SiteJsonLd() {
   const base = siteUrl();
   const logo = absoluteUrl(await getSiteLogoSrc());
@@ -25,7 +25,7 @@ export async function SiteJsonLd() {
         "@type": "SearchAction",
         target: {
           "@type": "EntryPoint",
-          urlTemplate: `${absoluteUrl("/listings/certified")}?q={search_term_string}`,
+          urlTemplate: `${absoluteUrl("/listings/all")}?q={search_term_string}`,
         },
         "query-input": "required name=search_term_string",
       },
