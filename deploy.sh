@@ -19,10 +19,17 @@ rsync -avz --delete \
   --exclude='terminals' \
   ./ "$REMOTE:$DEST/"
 
+# If ssh reports "Killed" during installs, Linux OOM-killed npm — common without swap on a 1–2GB VPS.
+# Add ~2GB swap once on the droplet (then re-run deploy):
+#   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+
 echo "→ Installing deps + migrating + backfilling thumbs + restarting"
+# `npm ci` wipes node_modules every time and spikes RAM; `npm install` is incremental and usually survives small hosts.
 ssh "$REMOTE" "
   cd $DEST &&
-  npm ci &&
+  export NPM_CONFIG_AUDIT=false &&
+  export NPM_CONFIG_FUND=false &&
+  npm install &&
   npx prisma migrate deploy &&
   npm run backfill:listing-thumbnails &&
   pm2 restart automerkado

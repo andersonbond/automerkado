@@ -13,6 +13,7 @@ import { ListingPhotoPlaceholder } from "@/components/cars/listing-photo-placeho
 import { OfficeLocationSection } from "@/components/landing/office-location-section";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
 import { RepossessedListingCountdownCard } from "@/components/listings/repossessed-listing-countdown";
+import { CERTIFIED_CATEGORY_SLUG } from "@/lib/carListingCategories";
 import {
   listCars,
   type CarListItem,
@@ -40,7 +41,11 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const featured: CarListItem[] = await listCars({ skip: 0, take: 12 });
+  const featured: CarListItem[] = await listCars({
+    skip: 0,
+    take: 12,
+    categorySlug: CERTIFIED_CATEGORY_SLUG,
+  });
   const hero = await getHeroVisualConfig();
 
   return (

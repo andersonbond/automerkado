@@ -80,7 +80,7 @@ What it does:
 
 1. Runs **`npm run build`** locally (Prisma generate/migrate against your dev DB, then Next production build).
 2. **`rsync -avz --delete`** from the repo root to `REMOTE:$DEST/`, excluding among other things `.git`, `.env*`, `node_modules`, `.next/cache`, `prisma/*.db*`, and **`public/uploads`** (production uploads stay on the server).
-3. **`ssh`** into the server: `npm ci`, `npx prisma migrate deploy`, `pm2 restart automerkado`.
+3. **`ssh`** into the server: **`npm install`**, **`npx prisma migrate deploy`**, **`npm run backfill:listing-thumbnails`**, **`pm2 restart automerkado`**. (The script uses `npm install` instead of `npm ci` to reduce OOM kills on small VPSes; always commit **`package-lock.json`**.)
 
 **Git workflow:** merge and push **`main`** from your Mac (and `origin`). Deploy does **not** rely on `git pull` on the server; the server tree is updated by rsync and may differ from a `git status` checkout there—that is normal if you keep a clone on the box only for convenience.
 
@@ -159,6 +159,10 @@ Then run `npm run dev` again. If it still fails, remove `node_modules` and `pack
 ### Dev compile: “Request timed out after 3000ms” / Retrying when opening `/`
 
 This app does **not** use `next/font/google` so first compile does not wait on Google Fonts. If you still see timeouts, Next is probably using the **WASM SWC fallback** (slow first compile)—fix the native SWC binary with the steps above, or wait for the first request to finish after retries.
+
+### Deploy: `Killed` during `npm` on the VPS
+
+Linux **OOM killer** (common on 1–2 GB RAM without swap). **`./deploy.sh`** runs **`npm install`** incrementally to reduce spikes; if installs still die, add **~2 GB swap** on the droplet (see comments in **`deploy.sh`**) or bump RAM for a large dependency upgrade.
 
 ## License
 
