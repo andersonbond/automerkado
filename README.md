@@ -84,7 +84,7 @@ What it does:
 
 **Git workflow:** merge and push **`main`** from your Mac (and `origin`). Deploy does **not** rely on `git pull` on the server; the server tree is updated by rsync and may differ from a `git status` checkout there—that is normal if you keep a clone on the box only for convenience.
 
-## Demo accounts (from seed)
+**Linux-only checkout on the VPS:** after **`git pull`**, run **`./deploy.sh --server`**. Plain **`./deploy.sh`** begins with **`npm run build`** (the “building locally” step) and commonly **OOM / SIGKILLs** **`next build`** on a **2 GB** box—`**--server`** skips that step and runs only **`build:deploy`**, **`pm2 stop`**, migrations, etc.
 
 | Role  | Email                     | Password     |
 | ----- | ------------------------- | ------------ |
@@ -112,7 +112,8 @@ When a user places a valid bid, the app attempts to send email via SMTP. If `SMT
 | `npm run db:reset` | Reset DB + migrate + seed  |
 | `npm run worker:repossessed-expiry` | Deactivate expired LISTED repossessed listings (scheduled worker) |
 | `npm run backfill:listing-thumbnails` | Generate `_thumb.webp` variants for any `CarImage` that's missing one (idempotent; safe to re-run) |
-| `./deploy.sh` | macOS → production rsync deploy (see **Deploy from macOS** above); requires local `REMOTE` / `DEST` edits |
+| `./deploy.sh` | From **Mac**: local sanity **`npm run build`**, **`rsync`**, then remote **`build:deploy`** + migrate + PM2 (see comments in script) |
+| `./deploy.sh --server` | On **Linux repo clone**: skip Mac/rsync; **`npm install`**, migrate, **`build:deploy`**, backfill, PM2 (use **after `git pull`**) |
 
 ### Repossessed listing expiry (production cron)
 

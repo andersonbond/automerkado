@@ -1,15 +1,52 @@
 #!/usr/bin/env bash
+#
+# From your Mac (sanity Next build here + rsync + remote Linux build):
+#   ./deploy.sh
+#
+# On the VPS alone (SKIP the Mac-era “build locally” step — avoids OOM on 2 GB RAM):
+#   ./deploy.sh --server
+#
+# Note: `./deploy.sh` on the VPS without --server starts with `npm run build` → SIGKILL/OOM on small VPS.
+#
 set -euo pipefail
 
 REMOTE="appuser@188.166.236.178"
 DEST="/home/appuser/automerkado"
 
-echo "→ Building locally"
+# One body: keep Mac `ssh bash -s` path and `./deploy.sh --server` identical.
+REMOTE_DEPLOY_BODY=$(cat <<'EOS'
+set -euo pipefail
+cd "$1" || exit 1
+export NPM_CONFIG_AUDIT=false
+export NPM_CONFIG_FUND=false
+npm install
+npx prisma migrate deploy
+pm2 stop automerkado 2>/dev/null || true
+rm -rf .next
+# Cap heap per process; webpack workers inherit (see Next build worker RSS on small RAM).
+export NODE_OPTIONS='--max-old-space-size=1024'
+npm run build:deploy
+npm run backfill:listing-thumbnails
+pm2 restart automerkado
+EOS
+)
+
+run_remote_deploy() {
+  printf '%s' "$REMOTE_DEPLOY_BODY" | bash -s -- "$1"
+}
+
+if [[ "${1:-}" == "--server" || "${1:-}" == "--on-server" ]]; then
+  repo="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  echo "→ Server-only (${repo}) — skipping Mac build / rsync"
+  run_remote_deploy "$repo"
+  echo "✓ Deployed (server-only)"
+  exit 0
+fi
+
+echo "→ Building locally (Mac sanity check)"
 npm run build
 
 echo "→ Syncing to $REMOTE:$DEST"
-# Never rsync `.next` from macOS to Linux — `node_modules` is Linux-specific and the
-# build output must match the host or `next start` often crashes (PM2 shows restarts / site 502).
 rsync -avz --delete \
   --exclude='.git' \
   --exclude='.env*' \
@@ -21,27 +58,9 @@ rsync -avz --delete \
   --exclude='terminals' \
   ./ "$REMOTE:$DEST/"
 
-# If ssh reports "Killed" during installs, Linux OOM-killed npm — common without swap on a 1–2GB VPS.
-# Add ~2GB swap once on the droplet (then re-run deploy):
-#   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+# OOM (“Killed” / SIGKILL): enable ≥2 GB swap, then `sudo swapon`, check `free -h`.
 
-echo "→ Installing deps + building on Linux + migrating + backfilling + restarting"
-# `npm ci` wipes node_modules every time and spikes RAM; `npm install` is incremental and usually survives small hosts.
-# Build must run on the VPS (see `.next` rsync exclude). Uses `build:deploy` (`next build --no-lint`) to save RAM.
-# Stops PM2 during the build so Node isn’t competing with the running app on a 2GB box. Ensure swap (~2G) or OOM may SIGKILL the build worker.
-ssh "$REMOTE" "
-  set -euo pipefail
-  cd $DEST &&
-  export NPM_CONFIG_AUDIT=false &&
-  export NPM_CONFIG_FUND=false &&
-  npm install &&
-  npx prisma migrate deploy &&
-  pm2 stop automerkado 2>/dev/null || true &&
-  rm -rf .next &&
-  export NODE_OPTIONS='--max-old-space-size=1536' &&
-  npm run build:deploy &&
-  npm run backfill:listing-thumbnails &&
-  pm2 restart automerkado
-"
+echo "→ Remote: deps + migrate + build on Linux + backfill + PM2"
+printf '%s' "$REMOTE_DEPLOY_BODY" | ssh "$REMOTE" bash -s -- "$DEST"
 
 echo "✓ Deployed"
