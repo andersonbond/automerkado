@@ -15,6 +15,14 @@ const nextConfig: NextConfig = {
     "heic-decode",
     "libheif-js",
   ],
+  webpack: (config, { dev }) => {
+    // Persistent/webpack cache improves incremental rebuilds but increases peak RSS
+    // during production `next build`; disabling avoids some OOM kills on 2 GB VPS.
+    if (!dev) {
+      config.cache = false;
+    }
+    return config;
+  },
   experimental: {
     // Next 15+: lowers webpack peak memory at cost of slower builds.
     webpackMemoryOptimizations: true,
