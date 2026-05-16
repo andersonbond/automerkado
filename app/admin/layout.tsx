@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { AdminLayoutClient } from "@/components/admin/admin-layout-client";
+import { auth } from "@/auth";
 import { getSiteLogoSrc } from "@/lib/siteLogo";
 
 export const metadata: Metadata = {
@@ -15,6 +18,14 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") {
+    const hdrs = await headers();
+    const path =
+      hdrs.get("x-automerkado-admin-path") ?? "/admin";
+    redirect(`/login?callbackUrl=${encodeURIComponent(path)}`);
+  }
+
   const logoSrc = await getSiteLogoSrc();
 
   return (
