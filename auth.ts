@@ -1,12 +1,8 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
+import authConfig from "@/auth.config";
 import { prisma } from "@/lib/db";
-
-/** Long-lived session when “Remember me” is checked (30 days). */
-const REMEMBER_MAX_SEC = 30 * 24 * 60 * 60;
-/** Browser-session style: no remember (12 hours). */
-const SESSION_MAX_SEC = 12 * 60 * 60;
 
 function parseRememberMe(value: unknown): boolean {
   return (
@@ -18,12 +14,7 @@ function parseRememberMe(value: unknown): boolean {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  trustHost: true,
-  session: {
-    strategy: "jwt",
-    // Ceiling for encoded JWT; actual idle length is enforced in jwt via sessionExpiresAt.
-    maxAge: REMEMBER_MAX_SEC,
-  },
+  ...authConfig,
   providers: [
     Credentials({
       name: "Credentials",
@@ -55,31 +46,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        const rememberMe = user.rememberMe === true;
-        token.rememberMe = rememberMe;
-        const ttlSec = rememberMe ? REMEMBER_MAX_SEC : SESSION_MAX_SEC;
-        token.sessionExpiresAt = Date.now() + ttlSec * 1000;
-        token.role = user.role ?? "USER";
-        token.sub = user.id;
-      } else if (
-        typeof token.sessionExpiresAt === "number" &&
-        Date.now() > token.sessionExpiresAt
-      ) {
-        return null;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub ?? "";
-        session.user.role = (token.role as string) ?? "USER";
-      }
-      return session;
-    },
-  },
   events: {
     async signIn({ user }) {
       if (user.id) {

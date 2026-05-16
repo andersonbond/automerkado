@@ -15,6 +15,7 @@ import {
 } from "@/components/admin/car-create-form";
 import { CarImagesFilePicker } from "@/components/admin/car-images-file-picker";
 import { PhpFormattedPriceInput } from "@/components/admin/php-formatted-price-input";
+import { CAR_BODY_TYPES } from "@/lib/carBodyTypes";
 import { prisma } from "@/lib/db";
 
 const inputClass =
@@ -112,6 +113,17 @@ export default async function NewCarPage({
                   required
                   className={`${inputClass} max-w-[12rem]`}
                 />
+                <label className={labelClass}>
+                  Body type
+                  <select name="bodyType" className={inputClass} defaultValue="">
+                    <option value="">— Not set</option>
+                    {CAR_BODY_TYPES.map((bt) => (
+                      <option key={bt} value={bt}>
+                        {bt}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
               <div className="min-w-0 space-y-8 lg:border-l lg:border-surface/80 lg:pl-10">

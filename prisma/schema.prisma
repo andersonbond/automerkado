@@ -43,6 +43,7 @@ model Car {
   brand                 String
   model                 String
   year                  Int
+  bodyType              String?
   price                 Decimal
   /// Optional promo price; public listing shows list price struck through with sale next to it.
   salePrice             Decimal?

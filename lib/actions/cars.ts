@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { assertAdmin } from "@/lib/actions/admin-guard";
+import { isCarBodyType } from "@/lib/carBodyTypes";
 import { allocateUniqueCarSlug, slugFromTitle } from "@/lib/carSlug";
 import { prisma } from "@/lib/db";
 import { REPOSSESSED_CATEGORY_SLUG } from "@/lib/repossessedListing";
@@ -50,6 +51,7 @@ const carSchema = z
     brand: z.string().min(1).max(80),
     model: z.string().min(1).max(80),
     year: z.coerce.number().int().min(1900).max(new Date().getFullYear() + 1),
+    bodyType: z.string(),
     price: z.coerce.number().positive(),
     salePrice: z.string(),
     description: z.string().min(1).max(20000),
@@ -57,6 +59,14 @@ const carSchema = z
     status: z.enum(["LISTED", "SOLD", "INACTIVE"]),
   })
   .superRefine((data, ctx) => {
+    const bt = data.bodyType.trim();
+    if (bt && !isCarBodyType(bt)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["bodyType"],
+        message: "Invalid body type",
+      });
+    }
     const t = normalizePriceInput(data.salePrice);
     if (!t) return;
     const n = Number(t);
@@ -68,14 +78,20 @@ const carSchema = z
       });
     }
   })
-  .transform(({ salePrice: saleRaw, ...rest }) => {
+  .transform(({ salePrice: saleRaw, bodyType, ...rest }) => {
     const t = normalizePriceInput(saleRaw);
+    const bt = bodyType.trim();
     if (!t) {
-      return { ...rest, salePrice: null as number | null };
+      return {
+        ...rest,
+        bodyType: bt === "" ? null : bt,
+        salePrice: null as number | null,
+      };
     }
     const n = Number(t);
     return {
       ...rest,
+      bodyType: bt === "" ? null : bt,
       salePrice: Number.isFinite(n) && n > 0 ? n : null,
     };
   });
@@ -95,6 +111,7 @@ function readCarForm(formData: FormData) {
     brand: String(formData.get("brand") ?? ""),
     model: String(formData.get("model") ?? ""),
     year: formData.get("year"),
+    bodyType: String(formData.get("bodyType") ?? ""),
     price: normalizePriceInput(formData.get("price")),
     salePrice: normalizePriceInput(formData.get("salePrice")),
     description: String(formData.get("description") ?? ""),
@@ -135,6 +152,7 @@ export async function createCarAction(formData: FormData) {
       brand: data.brand,
       model: data.model,
       year: data.year,
+      bodyType: data.bodyType,
       price: new Prisma.Decimal(data.price),
       salePrice:
         data.salePrice != null ? new Prisma.Decimal(data.salePrice) : null,
@@ -225,6 +243,7 @@ export async function updateCarAction(formData: FormData) {
       brand: data.brand,
       model: data.model,
       year: data.year,
+      bodyType: data.bodyType,
       price: new Prisma.Decimal(data.price),
       salePrice:
         data.salePrice != null ? new Prisma.Decimal(data.salePrice) : null,

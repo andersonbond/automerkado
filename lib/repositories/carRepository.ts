@@ -7,6 +7,7 @@ export type CarListFilters = {
   /** If set (non-empty), restricts to these category slugs; overrides `categorySlug`. */
   categorySlugs?: readonly string[];
   brand?: string;
+  bodyType?: string;
   search?: string;
   tagSlug?: string;
   minPrice?: number;
@@ -34,6 +35,10 @@ export function buildCarWhere(
     where.brand = filters.brand.trim();
   }
 
+  if (filters.bodyType?.trim()) {
+    where.bodyType = filters.bodyType.trim();
+  }
+
   if (filters.tagSlug?.trim()) {
     where.tags = {
       some: { slug: filters.tagSlug.trim().toLowerCase() },
@@ -46,6 +51,7 @@ export function buildCarWhere(
       { title: { contains: q } },
       { brand: { contains: q } },
       { model: { contains: q } },
+      { bodyType: { contains: q } },
       { tags: { some: { name: { contains: q } } } },
     ];
   }

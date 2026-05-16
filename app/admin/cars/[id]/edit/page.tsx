@@ -17,6 +17,7 @@ import type { LucideIcon } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { PhpFormattedPriceInput } from "@/components/admin/php-formatted-price-input";
 import { DeleteCarConfirm } from "@/components/admin/delete-car-confirm";
+import { CAR_BODY_TYPES } from "@/lib/carBodyTypes";
 import { updateCarAction } from "@/lib/actions/cars";
 import { prisma } from "@/lib/db";
 import { isPublicUploadPath, listingThumbForUploadPath } from "@/lib/nextImage";
@@ -206,6 +207,21 @@ export default async function EditCarPage({
                       required
                       className={`${inputClass} max-w-[12rem]`}
                     />
+                    <label className={labelClass}>
+                      Body type
+                      <select
+                        name="bodyType"
+                        defaultValue={car.bodyType ?? ""}
+                        className={inputClass}
+                      >
+                        <option value="">— Not set</option>
+                        {CAR_BODY_TYPES.map((bt) => (
+                          <option key={bt} value={bt}>
+                            {bt}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
 
                   <div className="min-w-0 space-y-8 lg:border-l lg:border-surface/80 lg:pl-10">

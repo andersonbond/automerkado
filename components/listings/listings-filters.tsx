@@ -3,6 +3,7 @@
 import { Filter, Search, SlidersHorizontal, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { CAR_BODY_TYPES, isCarBodyType } from "@/lib/carBodyTypes";
 import { POPULAR_CAR_BRANDS } from "@/lib/carBrands";
 
 const INLINE_TAG_LIMIT = 5;
@@ -33,6 +34,8 @@ function countActiveFilters(sp: URLSearchParams): number {
   let n = 0;
   if (sp.get("q")?.trim()) n += 1;
   if (sp.get("brand")) n += 1;
+  const bt = sp.get("bodyType");
+  if (bt && isCarBodyType(bt)) n += 1;
   if (sp.get("tag")) n += 1;
   if (sp.get("minPrice")) n += 1;
   if (sp.get("maxPrice")) n += 1;
@@ -93,6 +96,8 @@ export function ListingsFilters({
     if (search.trim()) params.set("q", search.trim());
     const brand = sp.get("brand");
     if (brand) params.set("brand", brand);
+    const bodyType = sp.get("bodyType");
+    if (bodyType && isCarBodyType(bodyType)) params.set("bodyType", bodyType);
     const tag = sp.get("tag");
     if (tag && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(tag))
       params.set("tag", tag);
@@ -107,6 +112,7 @@ export function ListingsFilters({
   }, [basePath, router, search, minPrice, maxPrice, minYear, maxYear, sp]);
 
   const selectedBrand = sp.get("brand");
+  const selectedBodyType = sp.get("bodyType");
   const selectedTag = sp.get("tag");
 
   const toggleBrand = useCallback(
@@ -124,6 +130,23 @@ export function ListingsFilters({
       });
     },
     [basePath, router, sp, selectedBrand],
+  );
+
+  const toggleBodyType = useCallback(
+    (value: string) => {
+      const next = new URLSearchParams(sp.toString());
+      if (selectedBodyType === value) {
+        next.delete("bodyType");
+      } else {
+        next.set("bodyType", value);
+      }
+      next.delete("page");
+      const qs = next.toString();
+      startTransition(() => {
+        router.push(qs ? `${basePath}?${qs}` : basePath);
+      });
+    },
+    [basePath, router, sp, selectedBodyType],
   );
 
   const toggleTag = useCallback(
@@ -200,8 +223,8 @@ export function ListingsFilters({
               Refine results
             </div>
             <p className="mt-1 text-xs text-muted">
-              Brand and tag chips apply instantly. Other fields use &ldquo;Apply
-              filters&rdquo;.
+              Brand, body type, and tag chips apply instantly. Other fields use
+              &ldquo;Apply filters&rdquo;.
             </p>
           </div>
 
@@ -228,6 +251,31 @@ export function ListingsFilters({
                     }
                   >
                     {brand}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="border-t border-border p-5">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+              Body type
+            </p>
+            <div
+              className="mt-3 flex flex-wrap gap-2"
+              role="group"
+              aria-label="Filter by body type"
+            >
+              {CAR_BODY_TYPES.map((bt) => {
+                const active = selectedBodyType === bt;
+                return (
+                  <button
+                    key={bt}
+                    type="button"
+                    onClick={() => toggleBodyType(bt)}
+                    className={tagChipButtonClass(active)}
+                  >
+                    {bt}
                   </button>
                 );
               })}
@@ -332,7 +380,7 @@ export function ListingsFilters({
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Brand, model, title, or tag"
+                  placeholder="Brand, model, title, tag, or body type"
                   className={`${inputBase} pl-9`}
                 />
               </span>
