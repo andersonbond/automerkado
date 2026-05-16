@@ -28,8 +28,9 @@ NODE_OPTIONS='--max-old-space-size=768' npm install
 npx prisma migrate deploy
 pm2 stop automerkado 2>/dev/null || true
 rm -rf .next
-# Lower cap than 1024 so concurrent Next/webpack workers stay under RAM+swap.
-export NODE_OPTIONS='--max-old-space-size=768'
+export NEXT_TELEMETRY_DISABLED=1
+# Single webpack process (experimental.webpackBuildWorker: false): one Node heap spike — cap 1024 MiB.
+export NODE_OPTIONS='--max-old-space-size=1024'
 npm run build:vps
 npm run backfill:listing-thumbnails
 pm2 restart automerkado
@@ -66,7 +67,7 @@ rsync -avz --delete \
 # OOM (“Killed” / SIGKILL): add swap on the VPS if needed, e.g.:
 #   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
 #   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-
+# If builds still die after webpackBuildWorker:false, grow swap (e.g. second 2G file) or build on a larger runner.
 echo "→ Remote: deps + migrate + build on Linux + backfill + PM2"
 printf '%s' "$REMOTE_DEPLOY_BODY" | ssh "$REMOTE" bash -s -- "$DEST"
 

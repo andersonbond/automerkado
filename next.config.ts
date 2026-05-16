@@ -18,6 +18,13 @@ const nextConfig: NextConfig = {
   experimental: {
     // Next 15+: lowers webpack peak memory at cost of slower builds.
     webpackMemoryOptimizations: true,
+    // Default webpack worker runs webpack in a second Node process — on a 1 vCPU /
+    // 2 GB VPS that often totals more RSS than RAM+swap and triggers SIGKILL.
+    webpackBuildWorker: false,
+    // Fewer concurrent prerender/export tasks → lower peak memory during `next build`.
+    staticGenerationMaxConcurrency: 1,
+    staticGenerationMinPagesPerWorker: 1,
+    optimizePackageImports: ["lucide-react", "recharts"],
     serverSourceMaps: false,
     serverActions: {
       // Default is 1 MB; car forms upload multiple images (10 MB each per
