@@ -15,11 +15,17 @@ export async function deactivateExpiredRepossessedListings(now = new Date()) {
       status: "LISTED",
       category: { slug: REPOSSESSED_CATEGORY_SLUG },
     },
-    select: { id: true, createdAt: true },
+    select: { id: true, createdAt: true, repossessedManualRelistAt: true },
   });
 
   const expiredIds = candidates
-    .filter((c) => now >= getRepossessedListingExpiresAt(c.createdAt))
+    .filter((c) => {
+      const expiresAt = getRepossessedListingExpiresAt(c.createdAt);
+      if (now < expiresAt) return false;
+      const manual = c.repossessedManualRelistAt;
+      if (manual != null && manual >= expiresAt) return false;
+      return true;
+    })
     .map((c) => c.id);
 
   if (expiredIds.length === 0) return;

@@ -48,6 +48,8 @@ model Car {
   categoryId            String
   category              Category              @relation(fields: [categoryId], references: [id])
   biddingManuallyClosed Boolean               @default(false)
+  /// Admin re-listed repossessed car; auto-expiry skips until status leaves LISTED.
+  repossessedManualRelistAt DateTime?
   status                String                @default("LISTED")
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt

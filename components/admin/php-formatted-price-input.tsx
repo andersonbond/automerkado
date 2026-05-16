@@ -72,7 +72,6 @@ export function PhpFormattedPriceInput({
   }, [defaultValue]);
 
   const [display, setDisplay] = useState(initial.display);
-  const [normalized, setNormalized] = useState(initial.normalized);
 
   const visibleRef = useRef<HTMLInputElement>(null);
   const hiddenRef = useRef<HTMLInputElement>(null);
@@ -97,13 +96,14 @@ export function PhpFormattedPriceInput({
   const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { display: d, normalized: n } = formatPhpPriceInput(e.target.value);
     setDisplay(d);
-    setNormalized(n);
     if (hiddenRef.current) hiddenRef.current.value = n;
   }, []);
 
   return (
     <>
-      <input type="hidden" name={name} ref={hiddenRef} value={normalized} readOnly />
+      {/* Uncontrolled hidden field: React `value={normalized}` would overwrite DOM
+          updates from submit-time sync before FormData is built, yielding empty price + failed saves. */}
+      <input type="hidden" name={name} ref={hiddenRef} defaultValue={initial.normalized} />
       <input
         id={id}
         ref={visibleRef}

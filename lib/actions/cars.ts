@@ -7,6 +7,7 @@ import { z } from "zod";
 import { assertAdmin } from "@/lib/actions/admin-guard";
 import { allocateUniqueCarSlug, slugFromTitle } from "@/lib/carSlug";
 import { prisma } from "@/lib/db";
+import { REPOSSESSED_CATEGORY_SLUG } from "@/lib/repossessedListing";
 import { syncCarTags } from "@/lib/syncCarTags";
 import { storeUploadedImage } from "@/lib/upload";
 
@@ -160,6 +161,12 @@ export async function updateCarAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) redirect("/admin/cars?error=id");
 
+  const existing = await prisma.car.findUnique({
+    where: { id },
+    select: { status: true },
+  });
+  if (!existing) redirect("/admin/cars?error=id");
+
   const raw = readCarForm(formData);
   const parsed = carSchema.safeParse(raw);
   if (!parsed.success) {
@@ -171,6 +178,16 @@ export async function updateCarAction(formData: FormData) {
   if (slugOwner && slugOwner.id !== id) {
     redirect(`/admin/cars/${id}/edit?error=slug`);
   }
+
+  const nextCat = await prisma.category.findUnique({
+    where: { id: data.categoryId },
+    select: { slug: true },
+  });
+  if (!nextCat) redirect(`/admin/cars/${id}/edit?error=1`);
+
+  const nextIsRepo = nextCat.slug === REPOSSESSED_CATEGORY_SLUG;
+  const becomingListed =
+    parsed.data.status === "LISTED" && existing.status !== "LISTED";
 
   await prisma.car.update({
     where: { id },
@@ -185,6 +202,11 @@ export async function updateCarAction(formData: FormData) {
       categoryId: data.categoryId,
       status: data.status,
       biddingManuallyClosed: raw.biddingManuallyClosed,
+      ...(nextIsRepo && becomingListed ? { repossessedManualRelistAt: new Date() } : {}),
+      ...(nextIsRepo && parsed.data.status !== "LISTED"
+        ? { repossessedManualRelistAt: null }
+        : {}),
+      ...(!nextIsRepo ? { repossessedManualRelistAt: null } : {}),
     },
   });
 
