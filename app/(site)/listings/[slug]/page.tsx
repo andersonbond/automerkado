@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { CertifiedTestDriveForm, RepossessedBidLeadForm } from "@/components/cars/car-listing-lead-forms";
 import { CarListingGallery } from "@/components/cars/car-listing-gallery";
 import { RepossessedListingCountdownDetail } from "@/components/listings/repossessed-listing-countdown";
+import { ListingPriceSlashPair } from "@/components/listings/listing-price-slash";
 import { isWeeklyBiddingOpen } from "@/lib/bidding/weeklyClose";
 import {
   CERTIFIED_CATEGORY_SLUG,
@@ -132,7 +133,7 @@ export default async function CarDetailPage({ params }: Props) {
       "@type": "Offer",
       url: canonical,
       priceCurrency: "PHP",
-      price: car.price.toString(),
+      price: (car.salePrice ?? car.price).toString(),
       availability: "https://schema.org/InStock",
       seller: {
         "@type": "Organization",
@@ -172,6 +173,7 @@ export default async function CarDetailPage({ params }: Props) {
   const repossessedExpiresIso = getRepossessedListingExpiresAtIso(
     car.category.slug,
     car.createdAt,
+    car.repossessedManualRelistAt,
   );
 
   const showLeadFormJump =
@@ -222,7 +224,11 @@ export default async function CarDetailPage({ params }: Props) {
       ) : null}
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <span className="inline-flex rounded-full border border-border bg-card px-3 py-1 font-medium text-foreground shadow-sm">
-          List {moneyPhp(car.price.toNumber())}
+          {car.salePrice ? (
+            <ListingPriceSlashPair listPrice={car.price} salePrice={car.salePrice} />
+          ) : (
+            <>List {moneyPhp(car.price.toNumber())}</>
+          )}
         </span>
         {car.category.slug === REPOSSESSED_CATEGORY_SLUG ? (
           <span className="inline-flex rounded-full border border-border bg-card px-3 py-1 font-medium text-foreground shadow-sm">

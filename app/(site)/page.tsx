@@ -13,6 +13,7 @@ import { ListingPhotoPlaceholder } from "@/components/cars/listing-photo-placeho
 import { OfficeLocationSection } from "@/components/landing/office-location-section";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
 import { RepossessedListingCountdownCard } from "@/components/listings/repossessed-listing-countdown";
+import { ListingCardPriceLine } from "@/components/listings/listing-card-price-line";
 import { CERTIFIED_CATEGORY_SLUG } from "@/lib/carListingCategories";
 import {
   listCars,
@@ -206,10 +207,10 @@ export default async function HomePage() {
         <ul className="mt-5 grid gap-4 sm:mt-8 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-6">
           {featured.map((car) => {
             const firstIm = car.images[0];
-            const high = car.bids[0]?.amount ?? car.price;
             const expiresIso = getRepossessedListingExpiresAtIso(
               car.category.slug,
               car.createdAt,
+              car.repossessedManualRelistAt,
             );
             // Use the small WebP thumb generated at upload (same approach as
             // CarGrid). Featured cards are ~33vw on desktop and full-width on
@@ -247,12 +248,13 @@ export default async function HomePage() {
                       <p className="mt-1.5 line-clamp-2 text-lg font-semibold leading-snug text-foreground">
                         {car.title}
                       </p>
-                      <p className="mt-3 text-sm font-medium text-foreground">
-                        From{" "}
-                        <span className="tabular-nums">
-                          PHP {Number(high).toLocaleString("en-PH")}
-                        </span>
-                      </p>
+                      <ListingCardPriceLine
+                        listPrice={car.price}
+                        salePrice={car.salePrice}
+                        categorySlug={car.category.slug}
+                        topBid={car.bids[0]?.amount}
+                        paragraphClassName="mt-3 text-sm font-medium text-foreground"
+                      />
                       {expiresIso ? (
                         <RepossessedListingCountdownCard expiresAtIso={expiresIso} />
                       ) : null}

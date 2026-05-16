@@ -3,6 +3,8 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(process.cwd()),
+  // Smaller webpack peak RSS on tiny VPS builds (trade: slightly slower compile).
+  productionBrowserSourceMaps: false,
   // Keep native/WASM image deps as plain runtime requires instead of bundling.
   // Without this, webpack walks libheif-js's WASM bundle, which (a) emits
   // "Critical dependency: require function..." warnings, and (b) inflates
@@ -14,6 +16,9 @@ const nextConfig: NextConfig = {
     "libheif-js",
   ],
   experimental: {
+    // Next 15+: lowers webpack peak memory at cost of slower builds.
+    webpackMemoryOptimizations: true,
+    serverSourceMaps: false,
     serverActions: {
       // Default is 1 MB; car forms upload multiple images (10 MB each per
       // lib/upload.ts). Sized to fit ~20-30 phone photos per submit. Must be

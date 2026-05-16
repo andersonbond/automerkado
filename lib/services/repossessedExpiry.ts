@@ -19,13 +19,10 @@ export async function deactivateExpiredRepossessedListings(now = new Date()) {
   });
 
   const expiredIds = candidates
-    .filter((c) => {
-      const expiresAt = getRepossessedListingExpiresAt(c.createdAt);
-      if (now < expiresAt) return false;
-      const manual = c.repossessedManualRelistAt;
-      if (manual != null && manual >= expiresAt) return false;
-      return true;
-    })
+    .filter(
+      (c) =>
+        now >= getRepossessedListingExpiresAt(c.createdAt, c.repossessedManualRelistAt),
+    )
     .map((c) => c.id);
 
   if (expiredIds.length === 0) return;

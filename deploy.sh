@@ -19,13 +19,18 @@ set -euo pipefail
 cd "$1" || exit 1
 export NPM_CONFIG_AUDIT=false
 export NPM_CONFIG_FUND=false
-npm install
+# Parallel npm lifecycle scripts spike RSS on small VPS; serialize installs.
+export NPM_CONFIG_JOBS=1
+echo "→ Memory (RAM/swap); SIGKILL often means OOM — add swap if Swap: 0B:"
+free -h || true
+# Cap Node heap during install + Prisma postinstall (multiple processes × heap cap ≈ total RSS).
+NODE_OPTIONS='--max-old-space-size=768' npm install
 npx prisma migrate deploy
 pm2 stop automerkado 2>/dev/null || true
 rm -rf .next
-# Cap heap per process; webpack workers inherit (see Next build worker RSS on small RAM).
-export NODE_OPTIONS='--max-old-space-size=1024'
-npm run build:deploy
+# Lower cap than 1024 so concurrent Next/webpack workers stay under RAM+swap.
+export NODE_OPTIONS='--max-old-space-size=768'
+npm run build:vps
 npm run backfill:listing-thumbnails
 pm2 restart automerkado
 EOS
@@ -58,7 +63,9 @@ rsync -avz --delete \
   --exclude='terminals' \
   ./ "$REMOTE:$DEST/"
 
-# OOM (“Killed” / SIGKILL): enable ≥2 GB swap, then `sudo swapon`, check `free -h`.
+# OOM (“Killed” / SIGKILL): add swap on the VPS if needed, e.g.:
+#   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+#   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 
 echo "→ Remote: deps + migrate + build on Linux + backfill + PM2"
 printf '%s' "$REMOTE_DEPLOY_BODY" | ssh "$REMOTE" bash -s -- "$DEST"

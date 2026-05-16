@@ -119,7 +119,7 @@ export default async function NewCarPage({
                   <SectionHeading
                     icon={Banknote}
                     title="Price"
-                    subtitle="Listed amount in PHP."
+                    subtitle="List price in PHP. Optional sale price appears on the public listing as the original amount struck through, then a slash, then the sale amount."
                   />
                   <label className={labelClass}>
                     Price (PHP)
@@ -128,6 +128,14 @@ export default async function NewCarPage({
                       required
                       className={inputClass}
                       placeholder="e.g. 1,250,000"
+                    />
+                  </label>
+                  <label className={labelClass}>
+                    Sale price (PHP)
+                    <PhpFormattedPriceInput
+                      name="salePrice"
+                      className={inputClass}
+                      placeholder="Optional — e.g. 1,100,000"
                     />
                   </label>
                 </div>

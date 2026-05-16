@@ -1,9 +1,33 @@
 "use client";
 
-import { Filter, Search, SlidersHorizontal } from "lucide-react";
+import { Filter, Search, SlidersHorizontal, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { POPULAR_CAR_BRANDS } from "@/lib/carBrands";
+
+const INLINE_TAG_LIMIT = 5;
+
+function tagsForInlineChips(
+  tags: { slug: string; name: string }[],
+  selectedSlug: string | null,
+  limit: number,
+) {
+  if (tags.length <= limit) return tags;
+  const selected = selectedSlug
+    ? tags.find((t) => t.slug === selectedSlug)
+    : undefined;
+  const others = selected
+    ? tags.filter((t) => t.slug !== selectedSlug)
+    : [...tags];
+  const ordered = selected ? [selected, ...others] : others;
+  return ordered.slice(0, limit);
+}
+
+function tagChipButtonClass(active: boolean) {
+  return active
+    ? "rounded-full border border-brand bg-brand/10 px-3.5 py-1.5 text-sm font-semibold text-foreground ring-1 ring-brand/25"
+    : "rounded-full border border-border bg-background px-3.5 py-1.5 text-sm font-medium text-muted transition-colors hover:border-brand/30 hover:text-foreground";
+}
 
 function countActiveFilters(sp: URLSearchParams): number {
   let n = 0;
@@ -43,7 +67,13 @@ export function ListingsFilters({
   const sp = useSearchParams();
   const [pending, startTransition] = useTransition();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const allTagsDialogRef = useRef<HTMLDialogElement>(null);
   const activeFilterCount = countActiveFilters(sp);
+
+  useEffect(() => {
+    if (!filtersOpen) allTagsDialogRef.current?.close();
+  }, [filtersOpen]);
+
   const [search, setSearch] = useState(defaults.search ?? sp.get("q") ?? "");
   const [minPrice, setMinPrice] = useState(
     defaults.minPrice ?? sp.get("minPrice") ?? "",
@@ -112,6 +142,29 @@ export function ListingsFilters({
     },
     [basePath, router, sp, selectedTag],
   );
+
+  const openAllTagsDialog = useCallback(() => {
+    allTagsDialogRef.current?.showModal();
+  }, []);
+
+  const closeAllTagsDialog = useCallback(() => {
+    allTagsDialogRef.current?.close();
+  }, []);
+
+  const pickTagFromDialog = useCallback(
+    (slug: string) => {
+      toggleTag(slug);
+      allTagsDialogRef.current?.close();
+    },
+    [toggleTag],
+  );
+
+  const inlineTags = tagsForInlineChips(
+    tagOptions,
+    selectedTag,
+    INLINE_TAG_LIMIT,
+  );
+  const showTagSeeMore = tagOptions.length > INLINE_TAG_LIMIT;
 
   return (
     <div>
@@ -187,28 +240,84 @@ export function ListingsFilters({
                 Tags
               </p>
               <div
-                className="mt-3 flex flex-wrap gap-2"
+                className="mt-3 flex flex-wrap items-center gap-2"
                 role="group"
                 aria-label="Filter by tag"
               >
-                {tagOptions.map((tag) => {
+                {inlineTags.map((tag) => {
                   const active = selectedTag === tag.slug;
                   return (
                     <button
                       key={tag.slug}
                       type="button"
                       onClick={() => toggleTag(tag.slug)}
-                      className={
-                        active
-                          ? "rounded-full border border-brand bg-brand/10 px-3.5 py-1.5 text-sm font-semibold text-foreground ring-1 ring-brand/25"
-                          : "rounded-full border border-border bg-background px-3.5 py-1.5 text-sm font-medium text-muted transition-colors hover:border-brand/30 hover:text-foreground"
-                      }
+                      className={tagChipButtonClass(active)}
                     >
                       {tag.name}
                     </button>
                   );
                 })}
+                {showTagSeeMore ? (
+                  <button
+                    type="button"
+                    onClick={openAllTagsDialog}
+                    className="rounded-full border border-dashed border-brand/40 bg-brand/5 px-3.5 py-1.5 text-sm font-semibold text-brand transition-colors hover:border-brand/55 hover:bg-brand/10"
+                  >
+                    See more...
+                  </button>
+                ) : null}
               </div>
+
+              <dialog
+                ref={allTagsDialogRef}
+                className="w-[min(100vw-2rem,26rem)] max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-card p-0 text-foreground shadow-2xl backdrop:bg-black/50 backdrop:backdrop-blur-[2px]"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) closeAllTagsDialog();
+                }}
+              >
+                <div className="border-b border-border px-5 py-4 sm:px-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-base font-semibold tracking-tight text-foreground">
+                        All tags
+                      </h3>
+                      <p className="mt-1 text-xs text-muted">
+                        Choose a tag to filter. Select the same tag again to clear
+                        it.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={closeAllTagsDialog}
+                      className="cursor-pointer rounded-lg p-1.5 text-muted transition hover:bg-surface hover:text-foreground"
+                      aria-label="Close"
+                    >
+                      <X className="h-5 w-5" aria-hidden />
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-[min(60vh,24rem)] overflow-y-auto px-5 py-4 sm:px-6">
+                  <div
+                    className="flex flex-wrap gap-2"
+                    role="group"
+                    aria-label="All tags"
+                  >
+                    {tagOptions.map((tag) => {
+                      const active = selectedTag === tag.slug;
+                      return (
+                        <button
+                          key={tag.slug}
+                          type="button"
+                          onClick={() => pickTagFromDialog(tag.slug)}
+                          className={tagChipButtonClass(active)}
+                        >
+                          {tag.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </dialog>
             </div>
           ) : null}
 

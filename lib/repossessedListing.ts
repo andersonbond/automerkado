@@ -14,14 +14,18 @@ function startOfMondayWeek(dt: DateTime): DateTime {
 }
 
 /**
- * Repossessed + Active listings expire at Wednesday 16:30 Asia/Manila in the **same**
- * Monday-start week as `createdAt`, unless that cutoff has already passed — then the
- * following Wednesday 16:30.
+ * Repossessed listings expire at Wednesday 16:30 Asia/Manila for the Monday-start week of the **anchor**
+ * instant (`manualRelistAt` when admin re-listed the car, otherwise `createdAt`), unless that cutoff has
+ * already passed relative to the anchor — then the following Wednesday 16:30.
  *
  * Example: listed Monday → visibility ends that week's Wednesday after 4:30 PM.
  */
-export function getRepossessedListingExpiresAt(createdAt: Date): Date {
-  const dt = DateTime.fromJSDate(createdAt).setZone(TZ);
+export function getRepossessedListingExpiresAt(
+  createdAt: Date,
+  manualRelistAt?: Date | null,
+): Date {
+  const anchor = manualRelistAt ?? createdAt;
+  const dt = DateTime.fromJSDate(anchor).setZone(TZ);
   const monday = startOfMondayWeek(dt);
   let wedCutoff = monday.plus({ days: 2 }).set({
     hour: CUT_HOUR,
@@ -39,7 +43,8 @@ export function getRepossessedListingExpiresAt(createdAt: Date): Date {
 export function getRepossessedListingExpiresAtIso(
   categorySlug: string,
   createdAt: Date,
+  manualRelistAt?: Date | null,
 ): string | null {
   if (categorySlug !== REPOSSESSED_CATEGORY_SLUG) return null;
-  return getRepossessedListingExpiresAt(createdAt).toISOString();
+  return getRepossessedListingExpiresAt(createdAt, manualRelistAt).toISOString();
 }

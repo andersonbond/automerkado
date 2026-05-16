@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ListingPhotoPlaceholder } from "@/components/cars/listing-photo-placeholder";
 import type { Prisma } from "@prisma/client";
+import { ListingCardPriceLine } from "@/components/listings/listing-card-price-line";
 import { RepossessedListingCountdownCard } from "@/components/listings/repossessed-listing-countdown";
 import { getRepossessedListingExpiresAtIso } from "@/lib/repossessedListing";
 import { isPublicUploadPath, listingThumbForUploadPath } from "@/lib/nextImage";
@@ -14,7 +15,9 @@ type CarRow = {
   model: string;
   year: number;
   price: Prisma.Decimal;
+  salePrice: Prisma.Decimal | null;
   createdAt: Date;
+  repossessedManualRelistAt?: Date | null;
   category: { name: string; slug: string };
   tags: { slug: string; name: string }[];
   images: { path: string; alt: string | null }[];
@@ -43,10 +46,10 @@ export function CarGrid({
     <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {cars.map((car) => {
         const firstIm = car.images[0];
-        const high = car.bids[0]?.amount ?? car.price;
         const expiresIso = getRepossessedListingExpiresAtIso(
           car.category.slug,
           car.createdAt,
+          car.repossessedManualRelistAt,
         );
         // Use the small WebP thumb generated alongside the original at upload
         // time (`writeListingThumbnail` in lib/upload.ts). Cuts grid byte
@@ -89,12 +92,12 @@ export function CarGrid({
                   <p className="mt-1 text-sm text-muted">
                     {car.brand} {car.model} · {car.year}
                   </p>
-                  <p className="mt-3 text-sm">
-                    <span className="text-muted">From </span>
-                    <span className="font-semibold tabular-nums text-foreground">
-                      PHP {Number(high).toLocaleString("en-PH")}
-                    </span>
-                  </p>
+                  <ListingCardPriceLine
+                    listPrice={car.price}
+                    salePrice={car.salePrice}
+                    categorySlug={car.category.slug}
+                    topBid={car.bids[0]?.amount}
+                  />
                   {expiresIso ? (
                     <RepossessedListingCountdownCard expiresAtIso={expiresIso} />
                   ) : null}

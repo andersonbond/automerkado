@@ -39,21 +39,46 @@ async function applyFeaturedImageForCar(carId: string, formData: FormData) {
   ]);
 }
 
-const carSchema = z.object({
-  title: z.string().min(1).max(200),
-  slug: z
-    .string()
-    .min(1)
-    .max(200)
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-  brand: z.string().min(1).max(80),
-  model: z.string().min(1).max(80),
-  year: z.coerce.number().int().min(1900).max(new Date().getFullYear() + 1),
-  price: z.coerce.number().positive(),
-  description: z.string().min(1).max(20000),
-  categoryId: z.string().min(1),
-  status: z.enum(["LISTED", "SOLD", "INACTIVE"]),
-});
+const carSchema = z
+  .object({
+    title: z.string().min(1).max(200),
+    slug: z
+      .string()
+      .min(1)
+      .max(200)
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    brand: z.string().min(1).max(80),
+    model: z.string().min(1).max(80),
+    year: z.coerce.number().int().min(1900).max(new Date().getFullYear() + 1),
+    price: z.coerce.number().positive(),
+    salePrice: z.string(),
+    description: z.string().min(1).max(20000),
+    categoryId: z.string().min(1),
+    status: z.enum(["LISTED", "SOLD", "INACTIVE"]),
+  })
+  .superRefine((data, ctx) => {
+    const t = normalizePriceInput(data.salePrice);
+    if (!t) return;
+    const n = Number(t);
+    if (!Number.isFinite(n) || n <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["salePrice"],
+        message: "Invalid sale price",
+      });
+    }
+  })
+  .transform(({ salePrice: saleRaw, ...rest }) => {
+    const t = normalizePriceInput(saleRaw);
+    if (!t) {
+      return { ...rest, salePrice: null as number | null };
+    }
+    const n = Number(t);
+    return {
+      ...rest,
+      salePrice: Number.isFinite(n) && n > 0 ? n : null,
+    };
+  });
 
 function normalizePriceInput(raw: FormDataEntryValue | null): string {
   return String(raw ?? "")
@@ -71,6 +96,7 @@ function readCarForm(formData: FormData) {
     model: String(formData.get("model") ?? ""),
     year: formData.get("year"),
     price: normalizePriceInput(formData.get("price")),
+    salePrice: normalizePriceInput(formData.get("salePrice")),
     description: String(formData.get("description") ?? ""),
     categoryId: String(formData.get("categoryId") ?? ""),
     status: String(formData.get("status") ?? "LISTED"),
@@ -110,6 +136,8 @@ export async function createCarAction(formData: FormData) {
       model: data.model,
       year: data.year,
       price: new Prisma.Decimal(data.price),
+      salePrice:
+        data.salePrice != null ? new Prisma.Decimal(data.salePrice) : null,
       description: data.description,
       categoryId: data.categoryId,
       status: data.status,
@@ -198,6 +226,8 @@ export async function updateCarAction(formData: FormData) {
       model: data.model,
       year: data.year,
       price: new Prisma.Decimal(data.price),
+      salePrice:
+        data.salePrice != null ? new Prisma.Decimal(data.salePrice) : null,
       description: data.description,
       categoryId: data.categoryId,
       status: data.status,
