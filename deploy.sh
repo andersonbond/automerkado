@@ -44,6 +44,15 @@ _deploy_stop_runtime() {
   fi
 }
 
+_deploy_clean_dot_next() {
+  [[ ! -e .next ]] && return 0
+  if rm -rf .next 2>/dev/null; then
+    return 0
+  fi
+  echo "→ Removing .next with sudo (left over from an earlier root deploy)"
+  sudo rm -rf .next
+}
+
 _automerkado_deploy_cleanup() {
   if [[ "${AUTOMERKADO_FASTAPI_STOPPED:-}" == "1" ]]; then
     echo "→ Restarting fastapi.service (acbmarket)"
@@ -83,7 +92,7 @@ _deploy_stop_runtime
 # Cap Node heap during install + Prisma postinstall (multiple processes × heap cap ≈ total RSS).
 NODE_OPTIONS='--max-old-space-size=768' npm install
 npx prisma migrate deploy
-rm -rf .next
+_deploy_clean_dot_next
 export NEXT_TELEMETRY_DISABLED=1
 # Single webpack process (experimental.webpackBuildWorker: false): one Node heap spike — cap 1024 MiB.
 export NODE_OPTIONS='--max-old-space-size=1024'
