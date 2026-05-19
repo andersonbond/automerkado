@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(process.cwd()),
   // Smaller webpack peak RSS on tiny VPS builds (trade: slightly slower compile).
   productionBrowserSourceMaps: false,
+  // `build:vps` sets SKIP_TYPECHECK=1 — tsc during `next build` OOMs on 2 GB VPS after compile.
+  typescript: {
+    ignoreBuildErrors: process.env.SKIP_TYPECHECK === "1",
+  },
   // Keep native/WASM image deps as plain runtime requires instead of bundling.
   // Without this, webpack walks libheif-js's WASM bundle, which (a) emits
   // "Critical dependency: require function..." warnings, and (b) inflates

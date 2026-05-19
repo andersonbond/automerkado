@@ -6,7 +6,7 @@
 # On the VPS alone (SKIP the Mac-era “build locally” step — avoids OOM on 2 GB RAM):
 #   ./deploy.sh --server
 # Run as appuser, NOT root — root `pm2 stop` does not stop appuser's next-server (OOM during build).
-# On 2 GB VPS, also: AUTOMERKADO_DEPLOY_FREE_RAM=1 ./deploy.sh --server
+# On 2 GB VPS: AUTOMERKADO_DEPLOY_FREE_RAM=1 ./deploy.sh --server — run `npm run typecheck` on Mac first (VPS skips tsc).
 #
 # Note: `./deploy.sh` on the VPS without --server starts with `npm run build` → SIGKILL/OOM on small VPS.
 #
