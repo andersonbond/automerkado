@@ -8,6 +8,7 @@ export type CarListFilters = {
   categorySlugs?: readonly string[];
   brand?: string;
   bodyType?: string;
+  fuelType?: string;
   search?: string;
   tagSlug?: string;
   minPrice?: number;
@@ -39,6 +40,10 @@ export function buildCarWhere(
     where.bodyType = filters.bodyType.trim();
   }
 
+  if (filters.fuelType?.trim()) {
+    where.fuelType = filters.fuelType.trim();
+  }
+
   if (filters.tagSlug?.trim()) {
     where.tags = {
       some: { slug: filters.tagSlug.trim().toLowerCase() },
@@ -52,6 +57,7 @@ export function buildCarWhere(
       { brand: { contains: q } },
       { model: { contains: q } },
       { bodyType: { contains: q } },
+      { fuelType: { contains: q } },
       { tags: { some: { name: { contains: q } } } },
     ];
   }

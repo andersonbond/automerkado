@@ -15,7 +15,7 @@ import {
 } from "@/components/admin/car-create-form";
 import { CarImagesFilePicker } from "@/components/admin/car-images-file-picker";
 import { PhpFormattedPriceInput } from "@/components/admin/php-formatted-price-input";
-import { CAR_BODY_TYPES } from "@/lib/carBodyTypes";
+import { CAR_FUEL_TYPES } from "@/lib/carFuelTypes";
 import { prisma } from "@/lib/db";
 
 const inputClass =
@@ -113,13 +113,22 @@ export default async function NewCarPage({
                   required
                   className={`${inputClass} max-w-[12rem]`}
                 />
+                <Field
+                  label="Body type"
+                  name="bodyType"
+                  autoComplete="off"
+                  placeholder="e.g. SUV, Sedan, Crossover"
+                  hint="Free text (max 80 characters)."
+                  maxLength={80}
+                  className={inputClass}
+                />
                 <label className={labelClass}>
-                  Body type
-                  <select name="bodyType" className={inputClass} defaultValue="">
+                  Fuel type
+                  <select name="fuelType" className={inputClass} defaultValue="">
                     <option value="">— Not set</option>
-                    {CAR_BODY_TYPES.map((bt) => (
-                      <option key={bt} value={bt}>
-                        {bt}
+                    {CAR_FUEL_TYPES.map((ft) => (
+                      <option key={ft} value={ft}>
+                        {ft}
                       </option>
                     ))}
                   </select>
@@ -301,6 +310,7 @@ function Field({
   hint,
   placeholder,
   autoComplete,
+  maxLength,
   className,
 }: {
   label: string;
@@ -310,6 +320,7 @@ function Field({
   hint?: string;
   placeholder?: string;
   autoComplete?: string;
+  maxLength?: number;
   className: string;
 }) {
   return (
@@ -321,6 +332,7 @@ function Field({
         required={required}
         placeholder={placeholder}
         autoComplete={autoComplete}
+        maxLength={maxLength}
         defaultValue=""
         className={className}
       />

@@ -1,12 +1,19 @@
-/** Canonical body type values (admin listings + public filters). */
+/**
+ * Preset values for public listing filter chips (`?bodyType=`).
+ * Admin body type is free text; filter URL still accepts only these exact values.
+ */
 export const CAR_BODY_TYPES = [
   "Hatchback",
   "Sedan",
   "SUV",
   "Van",
-  "Luxury Sedan",
-  "Luxury SUV",
   "Pick-up",
+  "Big Bikes",
+  "Motorcycles",
+  "Convertible",
+  "Coupe",
+  "Crossover",
+  "Station Wagon",
 ] as const;
 
 export type CarBodyType = (typeof CAR_BODY_TYPES)[number];

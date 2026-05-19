@@ -17,7 +17,7 @@ import type { LucideIcon } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { PhpFormattedPriceInput } from "@/components/admin/php-formatted-price-input";
 import { DeleteCarConfirm } from "@/components/admin/delete-car-confirm";
-import { CAR_BODY_TYPES } from "@/lib/carBodyTypes";
+import { CAR_FUEL_TYPES } from "@/lib/carFuelTypes";
 import { updateCarAction } from "@/lib/actions/cars";
 import { prisma } from "@/lib/db";
 import { isPublicUploadPath, listingThumbForUploadPath } from "@/lib/nextImage";
@@ -209,15 +209,30 @@ export default async function EditCarPage({
                     />
                     <label className={labelClass}>
                       Body type
-                      <select
+                      <input
                         name="bodyType"
+                        type="text"
+                        maxLength={80}
                         defaultValue={car.bodyType ?? ""}
+                        autoComplete="off"
+                        placeholder="e.g. SUV, Sedan, Crossover"
+                        className={inputClass}
+                      />
+                      <span className="mt-1 block text-xs text-muted">
+                        Free text (max 80 characters).
+                      </span>
+                    </label>
+                    <label className={labelClass}>
+                      Fuel type
+                      <select
+                        name="fuelType"
+                        defaultValue={car.fuelType ?? ""}
                         className={inputClass}
                       >
                         <option value="">— Not set</option>
-                        {CAR_BODY_TYPES.map((bt) => (
-                          <option key={bt} value={bt}>
-                            {bt}
+                        {CAR_FUEL_TYPES.map((ft) => (
+                          <option key={ft} value={ft}>
+                            {ft}
                           </option>
                         ))}
                       </select>

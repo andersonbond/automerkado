@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { assertAdmin } from "@/lib/actions/admin-guard";
-import { isCarBodyType } from "@/lib/carBodyTypes";
+import { isCarFuelType } from "@/lib/carFuelTypes";
 import { allocateUniqueCarSlug, slugFromTitle } from "@/lib/carSlug";
 import { prisma } from "@/lib/db";
 import { REPOSSESSED_CATEGORY_SLUG } from "@/lib/repossessedListing";
@@ -52,6 +52,7 @@ const carSchema = z
     model: z.string().min(1).max(80),
     year: z.coerce.number().int().min(1900).max(new Date().getFullYear() + 1),
     bodyType: z.string(),
+    fuelType: z.string(),
     price: z.coerce.number().positive(),
     salePrice: z.string(),
     description: z.string().min(1).max(20000),
@@ -60,11 +61,19 @@ const carSchema = z
   })
   .superRefine((data, ctx) => {
     const bt = data.bodyType.trim();
-    if (bt && !isCarBodyType(bt)) {
+    if (bt.length > 80) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["bodyType"],
-        message: "Invalid body type",
+        message: "Body type must be 80 characters or less",
+      });
+    }
+    const ft = data.fuelType.trim();
+    if (ft && !isCarFuelType(ft)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["fuelType"],
+        message: "Invalid fuel type",
       });
     }
     const t = normalizePriceInput(data.salePrice);
@@ -78,13 +87,15 @@ const carSchema = z
       });
     }
   })
-  .transform(({ salePrice: saleRaw, bodyType, ...rest }) => {
+  .transform(({ salePrice: saleRaw, bodyType, fuelType, ...rest }) => {
     const t = normalizePriceInput(saleRaw);
     const bt = bodyType.trim();
+    const ft = fuelType.trim();
     if (!t) {
       return {
         ...rest,
         bodyType: bt === "" ? null : bt,
+        fuelType: ft === "" ? null : ft,
         salePrice: null as number | null,
       };
     }
@@ -92,6 +103,7 @@ const carSchema = z
     return {
       ...rest,
       bodyType: bt === "" ? null : bt,
+      fuelType: ft === "" ? null : ft,
       salePrice: Number.isFinite(n) && n > 0 ? n : null,
     };
   });
@@ -112,6 +124,7 @@ function readCarForm(formData: FormData) {
     model: String(formData.get("model") ?? ""),
     year: formData.get("year"),
     bodyType: String(formData.get("bodyType") ?? ""),
+    fuelType: String(formData.get("fuelType") ?? ""),
     price: normalizePriceInput(formData.get("price")),
     salePrice: normalizePriceInput(formData.get("salePrice")),
     description: String(formData.get("description") ?? ""),
@@ -153,6 +166,7 @@ export async function createCarAction(formData: FormData) {
       model: data.model,
       year: data.year,
       bodyType: data.bodyType,
+      fuelType: data.fuelType,
       price: new Prisma.Decimal(data.price),
       salePrice:
         data.salePrice != null ? new Prisma.Decimal(data.salePrice) : null,
@@ -244,6 +258,7 @@ export async function updateCarAction(formData: FormData) {
       model: data.model,
       year: data.year,
       bodyType: data.bodyType,
+      fuelType: data.fuelType,
       price: new Prisma.Decimal(data.price),
       salePrice:
         data.salePrice != null ? new Prisma.Decimal(data.salePrice) : null,

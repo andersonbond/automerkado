@@ -1,4 +1,5 @@
 import { parseBodyTypeQuery } from "@/lib/carBodyTypes";
+import { parseFuelTypeQuery } from "@/lib/carFuelTypes";
 import { PAGE_SIZE } from "@/lib/constants";
 import type { CarListFilters } from "@/lib/repositories/carRepository";
 
@@ -36,10 +37,15 @@ export function parseListingsSearchParams(
     typeof sp.bodyType === "string" ? sp.bodyType : undefined,
   );
 
+  const fuelType = parseFuelTypeQuery(
+    typeof sp.fuelType === "string" ? sp.fuelType : undefined,
+  );
+
   return {
     search: q,
     brand,
     bodyType,
+    fuelType,
     tagSlug,
     minPrice: Number.isFinite(minPrice) ? minPrice : undefined,
     maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,

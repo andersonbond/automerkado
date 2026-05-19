@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { SessionProvider } from "@/components/session-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { MetaPixel } from "@/components/meta-pixel";
 import { absoluteUrl, siteUrlObject } from "@/lib/site";
 import { DEFAULT_FAVICON, getSiteLogoSrc } from "@/lib/siteLogo";
 import "./globals.css";
@@ -117,6 +118,7 @@ export default function RootLayout({
         <ThemeProvider>
           <SessionProvider>{children}</SessionProvider>
         </ThemeProvider>
+        <MetaPixel />
       </body>
     </html>
   );

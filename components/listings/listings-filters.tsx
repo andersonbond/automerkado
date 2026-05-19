@@ -4,6 +4,7 @@ import { Filter, Search, SlidersHorizontal, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { CAR_BODY_TYPES, isCarBodyType } from "@/lib/carBodyTypes";
+import { CAR_FUEL_TYPES, isCarFuelType } from "@/lib/carFuelTypes";
 import { POPULAR_CAR_BRANDS } from "@/lib/carBrands";
 
 const INLINE_TAG_LIMIT = 5;
@@ -36,6 +37,8 @@ function countActiveFilters(sp: URLSearchParams): number {
   if (sp.get("brand")) n += 1;
   const bt = sp.get("bodyType");
   if (bt && isCarBodyType(bt)) n += 1;
+  const ft = sp.get("fuelType");
+  if (ft && isCarFuelType(ft)) n += 1;
   if (sp.get("tag")) n += 1;
   if (sp.get("minPrice")) n += 1;
   if (sp.get("maxPrice")) n += 1;
@@ -98,6 +101,9 @@ export function ListingsFilters({
     if (brand) params.set("brand", brand);
     const bodyType = sp.get("bodyType");
     if (bodyType && isCarBodyType(bodyType)) params.set("bodyType", bodyType);
+    const fuelType = sp.get("fuelType");
+    if (fuelType && isCarFuelType(fuelType))
+      params.set("fuelType", fuelType);
     const tag = sp.get("tag");
     if (tag && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(tag))
       params.set("tag", tag);
@@ -113,6 +119,7 @@ export function ListingsFilters({
 
   const selectedBrand = sp.get("brand");
   const selectedBodyType = sp.get("bodyType");
+  const selectedFuelType = sp.get("fuelType");
   const selectedTag = sp.get("tag");
 
   const toggleBrand = useCallback(
@@ -147,6 +154,23 @@ export function ListingsFilters({
       });
     },
     [basePath, router, sp, selectedBodyType],
+  );
+
+  const toggleFuelType = useCallback(
+    (value: string) => {
+      const next = new URLSearchParams(sp.toString());
+      if (selectedFuelType === value) {
+        next.delete("fuelType");
+      } else {
+        next.set("fuelType", value);
+      }
+      next.delete("page");
+      const qs = next.toString();
+      startTransition(() => {
+        router.push(qs ? `${basePath}?${qs}` : basePath);
+      });
+    },
+    [basePath, router, sp, selectedFuelType],
   );
 
   const toggleTag = useCallback(
@@ -223,8 +247,8 @@ export function ListingsFilters({
               Refine results
             </div>
             <p className="mt-1 text-xs text-muted">
-              Brand, body type, and tag chips apply instantly. Other fields use
-              &ldquo;Apply filters&rdquo;.
+              Brand, body type, fuel type, and tag chips apply instantly. Other
+              fields use &ldquo;Apply filters&rdquo;.
             </p>
           </div>
 
@@ -276,6 +300,31 @@ export function ListingsFilters({
                     className={tagChipButtonClass(active)}
                   >
                     {bt}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="border-t border-border p-5">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted">
+              Fuel type
+            </p>
+            <div
+              className="mt-3 flex flex-wrap gap-2"
+              role="group"
+              aria-label="Filter by fuel type"
+            >
+              {CAR_FUEL_TYPES.map((ft) => {
+                const active = selectedFuelType === ft;
+                return (
+                  <button
+                    key={ft}
+                    type="button"
+                    onClick={() => toggleFuelType(ft)}
+                    className={tagChipButtonClass(active)}
+                  >
+                    {ft}
                   </button>
                 );
               })}
@@ -380,7 +429,7 @@ export function ListingsFilters({
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Brand, model, title, tag, or body type"
+                  placeholder="Brand, model, title, tag, body type, or fuel"
                   className={`${inputBase} pl-9`}
                 />
               </span>
