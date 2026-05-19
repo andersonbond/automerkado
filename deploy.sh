@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #
-# From your Mac (sanity Next build here + rsync + remote Linux build):
+# Recommended (Mac): Linux build in Docker, rsync .next, no `next build` on VPS (avoids OOM):
+#   npm run typecheck && ./deploy.sh --prebuilt
+#
+# Mac + remote build on VPS (often OOM on 1 vCPU even with 4 GB RAM):
 #   ./deploy.sh
 #
-# On the VPS alone (SKIP the Mac-era “build locally” step — avoids OOM on 2 GB RAM):
-#   ./deploy.sh --server
-# Run as appuser, NOT root — root `pm2 stop` does not stop appuser's next-server (OOM during build).
-# On 2 GB VPS: AUTOMERKADO_DEPLOY_FREE_RAM=1 ./deploy.sh --server — run `npm run typecheck` on Mac first (VPS skips tsc).
-#
-# Note: `./deploy.sh` on the VPS without --server starts with `npm run build` → SIGKILL/OOM on small VPS.
+# VPS only:
+#   ./deploy.sh --server          # as appuser, not root
+#   ./deploy.sh --server --no-build   # after ./deploy.sh --prebuilt rsynced .next
 #
 set -euo pipefail
 
@@ -94,11 +94,32 @@ NODE_OPTIONS='--max-old-space-size=768' npm install
 npx prisma migrate deploy
 _deploy_clean_dot_next
 export NEXT_TELEMETRY_DISABLED=1
-# Single webpack process (experimental.webpackBuildWorker: false): one Node heap spike — cap 1024 MiB.
-export NODE_OPTIONS='--max-old-space-size=1024'
-npm run build:vps
+if [[ "${AUTOMERKADO_SKIP_REMOTE_BUILD:-}" == "1" ]]; then
+  if [[ ! -f .next/BUILD_ID ]]; then
+    echo "ERROR: AUTOMERKADO_SKIP_REMOTE_BUILD=1 but .next/BUILD_ID is missing." >&2
+    echo "  On Mac run: npm run build:linux-docker && ./deploy.sh --prebuilt" >&2
+    exit 1
+  fi
+  echo "→ Skipping next build on VPS (using synced .next from Linux Docker build)"
+else
+  if pgrep -af 'next-server' >/dev/null 2>&1; then
+    echo "ERROR: next-server still running — build will OOM. Run as appuser and ensure PM2 stopped." >&2
+    pgrep -af 'next-server' || true
+    exit 1
+  fi
+  echo "→ next build on VPS (if this is Killed, use ./deploy.sh --prebuilt from your Mac)"
+  # Do NOT set 4096 on a 4 GB VM — V8 heap + webpack native RSS exceeds RAM (see dmesg anon-rss ~3.7G).
+  export NODE_OPTIONS='--max-old-space-size=1536'
+  npm run build:vps
+fi
 npm run backfill:listing-thumbnails
-_deploy_pm2 restart automerkado
+if _deploy_pm2 describe automerkado >/dev/null 2>&1; then
+  _deploy_pm2 restart automerkado
+else
+  echo "→ PM2 app missing — starting from ecosystem.config.cjs"
+  _deploy_pm2 start ecosystem.config.cjs
+  _deploy_pm2 save
+fi
 EOS
 )
 
@@ -108,17 +129,41 @@ run_remote_deploy() {
 
 if [[ "${1:-}" == "--server" || "${1:-}" == "--on-server" ]]; then
   repo="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  skip_build=0
+  [[ "${2:-}" == "--no-build" || "${AUTOMERKADO_SKIP_REMOTE_BUILD:-}" == "1" ]] && skip_build=1
   if [[ "$(id -u)" -eq 0 ]]; then
     owner=$(stat -c '%U' "$repo" 2>/dev/null || true)
     if [[ -n "$owner" && "$owner" != "root" ]]; then
       echo "→ Re-running deploy as $owner (root cannot stop appuser PM2 / next-server)"
-      exec sudo -u "$owner" -E env AUTOMERKADO_DEPLOY_FREE_RAM="${AUTOMERKADO_DEPLOY_FREE_RAM:-}" \
-        bash "$(readlink -f "${BASH_SOURCE[0]}")" --server
+      exec sudo -u "$owner" -E env \
+        AUTOMERKADO_DEPLOY_FREE_RAM="${AUTOMERKADO_DEPLOY_FREE_RAM:-}" \
+        AUTOMERKADO_SKIP_REMOTE_BUILD="${skip_build}" \
+        bash "$(readlink -f "${BASH_SOURCE[0]}")" --server $([[ "$skip_build" == 1 ]] && echo --no-build)
     fi
   fi
   echo "→ Server-only (${repo}) — skipping Mac build / rsync"
-  run_remote_deploy "$repo"
+  AUTOMERKADO_SKIP_REMOTE_BUILD="$skip_build" run_remote_deploy "$repo"
   echo "✓ Deployed (server-only)"
+  exit 0
+fi
+
+if [[ "${1:-}" == "--prebuilt" ]]; then
+  echo "→ Mac: typecheck + Linux Docker build + rsync (no next build on VPS)"
+  npm run typecheck
+  npm run build:linux-docker
+  echo "→ Syncing to $REMOTE:$DEST (including .next)"
+  rsync -avz --delete \
+    --exclude='.git' \
+    --exclude='.env*' \
+    --exclude='node_modules' \
+    --exclude='prisma/*.db*' \
+    --exclude='public/uploads' \
+    --exclude='.DS_Store' \
+    --exclude='terminals' \
+    ./ "$REMOTE:$DEST/"
+  echo "→ Remote: install + migrate + PM2 (skip build)"
+  AUTOMERKADO_SKIP_REMOTE_BUILD=1 printf '%s' "$REMOTE_DEPLOY_BODY" | ssh "$REMOTE" bash -s -- "$DEST"
+  echo "✓ Deployed (--prebuilt)"
   exit 0
 fi
 
@@ -137,12 +182,6 @@ rsync -avz --delete \
   --exclude='terminals' \
   ./ "$REMOTE:$DEST/"
 
-# OOM: `/swapfile` already exists if you see "Text file busy" — add *second* swap instead:
-#   sudo swapon --show
-#   sudo fallocate -l 2G /swapfile2 && sudo chmod 600 /swapfile2 && sudo mkswap /swapfile2 && sudo swapon /swapfile2
-#   echo '/swapfile2 none swap sw 0 0' | sudo tee -a /etc/fstab
-# Optional: free RAM during `next build` if you use passwordless sudo (stops Postgres; app uses SQLite):
-#   AUTOMERKADO_DEPLOY_FREE_RAM=1 ./deploy.sh --server
 echo "→ Remote: deps + migrate + build on Linux + backfill + PM2"
 printf '%s' "$REMOTE_DEPLOY_BODY" | ssh "$REMOTE" bash -s -- "$DEST"
 

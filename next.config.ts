@@ -28,6 +28,10 @@ const nextConfig: NextConfig = {
     return config;
   },
   experimental: {
+    // `build:vps` / VPS_BUILD=1: less parallel work during `next build` on 1 vCPU hosts.
+    ...(process.env.VPS_BUILD === "1"
+      ? { cpus: 1, memoryBasedWorkersCount: true }
+      : {}),
     // Next 15+: lowers webpack peak memory at cost of slower builds.
     webpackMemoryOptimizations: true,
     // Default webpack worker runs webpack in a second Node process — on a 1 vCPU /
