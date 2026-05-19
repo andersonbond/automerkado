@@ -5,9 +5,8 @@
 #
 # On the VPS alone (SKIP the Mac-era “build locally” step — avoids OOM on 2 GB RAM):
 #   ./deploy.sh --server
-# On 2 GB VPS, stop acbmarket FastAPI + optional Postgres during `next build` (needs sudo -n):
-#   AUTOMERKADO_DEPLOY_FREE_RAM=1 ./deploy.sh --server
-# Or manually before deploy: sudo systemctl stop fastapi.service
+# Run as appuser, NOT root — root `pm2 stop` does not stop appuser's next-server (OOM during build).
+# On 2 GB VPS, also: AUTOMERKADO_DEPLOY_FREE_RAM=1 ./deploy.sh --server
 #
 # Note: `./deploy.sh` on the VPS without --server starts with `npm run build` → SIGKILL/OOM on small VPS.
 #
@@ -20,6 +19,30 @@ DEST="/home/appuser/automerkado"
 REMOTE_DEPLOY_BODY=$(cat <<'EOS'
 set -euo pipefail
 cd "$1" || exit 1
+
+_deploy_pm2() {
+  local app_user="${AUTOMERKADO_APP_USER:-$(stat -c '%U' . 2>/dev/null || id -un)}"
+  if [[ "$(id -un)" == "$app_user" ]]; then
+    pm2 "$@"
+  else
+    sudo -u "$app_user" pm2 "$@"
+  fi
+}
+
+_deploy_stop_runtime() {
+  echo "→ Stopping PM2 automerkado (frees next-server RAM for build)"
+  _deploy_pm2 stop automerkado 2>/dev/null || true
+  sleep 2
+  if pgrep -af 'next-server' >/dev/null 2>&1; then
+    echo "! next-server still running — pm2 stop all as $(stat -c '%U' . 2>/dev/null || id -un)"
+    _deploy_pm2 stop all 2>/dev/null || true
+    sleep 2
+  fi
+  if pgrep -af 'next-server' >/dev/null 2>&1; then
+    echo "! Warning: next-server still present; build may OOM. Run deploy as appuser, not root."
+    pgrep -af 'next-server' || true
+  fi
+}
 
 _automerkado_deploy_cleanup() {
   if [[ "${AUTOMERKADO_FASTAPI_STOPPED:-}" == "1" ]]; then
@@ -41,10 +64,6 @@ export NPM_CONFIG_FUND=false
 export NPM_CONFIG_JOBS=1
 echo "→ Memory (RAM/swap); SIGKILL often means OOM — add swap if Swap: 0B:"
 free -h || true
-# Cap Node heap during install + Prisma postinstall (multiple processes × heap cap ≈ total RSS).
-NODE_OPTIONS='--max-old-space-size=768' npm install
-npx prisma migrate deploy
-pm2 stop automerkado 2>/dev/null || true
 if [[ "${AUTOMERKADO_DEPLOY_FREE_RAM:-}" == "1" ]]; then
   if sudo -n true 2>/dev/null; then
     if systemctl is-active --quiet fastapi.service 2>/dev/null; then
@@ -60,13 +79,17 @@ if [[ "${AUTOMERKADO_DEPLOY_FREE_RAM:-}" == "1" ]]; then
     echo "  sudo systemctl stop fastapi.service postgresql"
   fi
 fi
+_deploy_stop_runtime
+# Cap Node heap during install + Prisma postinstall (multiple processes × heap cap ≈ total RSS).
+NODE_OPTIONS='--max-old-space-size=768' npm install
+npx prisma migrate deploy
 rm -rf .next
 export NEXT_TELEMETRY_DISABLED=1
 # Single webpack process (experimental.webpackBuildWorker: false): one Node heap spike — cap 1024 MiB.
 export NODE_OPTIONS='--max-old-space-size=1024'
 npm run build:vps
 npm run backfill:listing-thumbnails
-pm2 restart automerkado
+_deploy_pm2 restart automerkado
 EOS
 )
 
@@ -76,6 +99,14 @@ run_remote_deploy() {
 
 if [[ "${1:-}" == "--server" || "${1:-}" == "--on-server" ]]; then
   repo="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  if [[ "$(id -u)" -eq 0 ]]; then
+    owner=$(stat -c '%U' "$repo" 2>/dev/null || true)
+    if [[ -n "$owner" && "$owner" != "root" ]]; then
+      echo "→ Re-running deploy as $owner (root cannot stop appuser PM2 / next-server)"
+      exec sudo -u "$owner" -E env AUTOMERKADO_DEPLOY_FREE_RAM="${AUTOMERKADO_DEPLOY_FREE_RAM:-}" \
+        bash "$(readlink -f "${BASH_SOURCE[0]}")" --server
+    fi
+  fi
   echo "→ Server-only (${repo}) — skipping Mac build / rsync"
   run_remote_deploy "$repo"
   echo "✓ Deployed (server-only)"
