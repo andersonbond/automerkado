@@ -5,8 +5,9 @@
 #
 # On the VPS alone (SKIP the Mac-era “build locally” step — avoids OOM on 2 GB RAM):
 #   ./deploy.sh --server
-# If OOM persists (Postgres/Python/other daemons steal RAM), either add swap / stop extras or:
-#   AUTOMERKADO_DEPLOY_FREE_RAM=1 ./deploy.sh --server   # stops Postgres during build (needs sudo -n)
+# On 2 GB VPS, stop acbmarket FastAPI + optional Postgres during `next build` (needs sudo -n):
+#   AUTOMERKADO_DEPLOY_FREE_RAM=1 ./deploy.sh --server
+# Or manually before deploy: sudo systemctl stop fastapi.service
 #
 # Note: `./deploy.sh` on the VPS without --server starts with `npm run build` → SIGKILL/OOM on small VPS.
 #
@@ -21,6 +22,11 @@ set -euo pipefail
 cd "$1" || exit 1
 
 _automerkado_deploy_cleanup() {
+  if [[ "${AUTOMERKADO_FASTAPI_STOPPED:-}" == "1" ]]; then
+    echo "→ Restarting fastapi.service (acbmarket)"
+    sudo systemctl start fastapi.service 2>/dev/null || true
+    AUTOMERKADO_FASTAPI_STOPPED=
+  fi
   if [[ "${AUTOMERKADO_POSTGRES_STOPPED:-}" == "1" ]]; then
     echo "→ Restarting postgresql"
     sudo systemctl start postgresql 2>/dev/null || true
@@ -41,12 +47,17 @@ npx prisma migrate deploy
 pm2 stop automerkado 2>/dev/null || true
 if [[ "${AUTOMERKADO_DEPLOY_FREE_RAM:-}" == "1" ]]; then
   if sudo -n true 2>/dev/null; then
+    if systemctl is-active --quiet fastapi.service 2>/dev/null; then
+      echo "→ AUTOMERKADO_DEPLOY_FREE_RAM=1: stopping fastapi.service (acbmarket) for build"
+      sudo systemctl stop fastapi.service && AUTOMERKADO_FASTAPI_STOPPED=1
+    fi
     if systemctl is-active --quiet postgresql 2>/dev/null; then
       echo "→ AUTOMERKADO_DEPLOY_FREE_RAM=1: stopping postgresql for build"
       sudo systemctl stop postgresql && AUTOMERKADO_POSTGRES_STOPPED=1
     fi
   else
-    echo "! AUTOMERKADO_DEPLOY_FREE_RAM=1 but non-interactive sudo is not allowed — skip service stop (use visudo NOPASSWD or run stops manually)."
+    echo "! AUTOMERKADO_DEPLOY_FREE_RAM=1 but sudo -n failed — stop fastapi/postgres manually, then re-run."
+    echo "  sudo systemctl stop fastapi.service postgresql"
   fi
 fi
 rm -rf .next
@@ -86,11 +97,10 @@ rsync -avz --delete \
   --exclude='terminals' \
   ./ "$REMOTE:$DEST/"
 
-# OOM (“Killed” / SIGKILL): add swap on the VPS if needed, e.g.:
-#   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
-#   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-# Add a *second* 2G swap without removing the first (dmesg showed node ~1.7G RSS + postgres + nginx):
+# OOM: `/swapfile` already exists if you see "Text file busy" — add *second* swap instead:
+#   sudo swapon --show
 #   sudo fallocate -l 2G /swapfile2 && sudo chmod 600 /swapfile2 && sudo mkswap /swapfile2 && sudo swapon /swapfile2
+#   echo '/swapfile2 none swap sw 0 0' | sudo tee -a /etc/fstab
 # Optional: free RAM during `next build` if you use passwordless sudo (stops Postgres; app uses SQLite):
 #   AUTOMERKADO_DEPLOY_FREE_RAM=1 ./deploy.sh --server
 echo "→ Remote: deps + migrate + build on Linux + backfill + PM2"
