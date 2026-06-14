@@ -49,6 +49,9 @@ next-env.d.ts
 /public/uploads/**
 !/public/uploads/.gitkeep
 
+# generated Meta inventory feed (created on server by export script / cron)
+/public/feeds/*.csv
+
 # production / server (never commit runtime DB or editor–PM2 backups)
 prisma/prod.db
 prisma/*.db-wal

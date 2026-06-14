@@ -120,6 +120,8 @@ else
   _deploy_pm2 start ecosystem.config.cjs
   _deploy_pm2 save
 fi
+echo "→ Meta inventory CSV (public /feeds/meta-inventory.csv)"
+npm run export:meta-inventory
 EOS
 )
 
@@ -158,6 +160,7 @@ if [[ "${1:-}" == "--prebuilt" ]]; then
     --exclude='node_modules' \
     --exclude='prisma/*.db*' \
     --exclude='public/uploads' \
+    --exclude='public/feeds/*.csv' \
     --exclude='.DS_Store' \
     --exclude='terminals' \
     ./ "$REMOTE:$DEST/"
@@ -178,6 +181,7 @@ rsync -avz --delete \
   --exclude='.next' \
   --exclude='prisma/*.db*' \
   --exclude='public/uploads' \
+  --exclude='public/feeds/*.csv' \
   --exclude='.DS_Store' \
   --exclude='terminals' \
   ./ "$REMOTE:$DEST/"

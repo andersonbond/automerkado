@@ -58,7 +58,7 @@ Optional static assets can live under **`public/`** (e.g. **`public/car_images/`
 - **`prisma/prod.db`** is listed in `.gitignore`; keep production SQLite (and WAL sidecars) only on disk or backups, not in Git.
 - **`AUTOMERKADO_APP_ROOT`** (optional, in `.env`): absolute path to the repo root (directory that contains `public/` and `package.json`). Sets where listing images and uploads are **written** and is used by the **`/uploads/...`** handler so reads match writes if `process.cwd()` is wrong under PM2/systemd.
 - **Nginx**: if you serve `/uploads/` with `root` at the **repo** root, requests look for `./uploads/...` instead of **`./public/uploads/...`** and return 404. Prefer **`location / { proxy_pass http://127.0.0.1:3000; }`** for all traffic, **or** use `alias /home/.../automerkado/public/uploads/;` (with trailing slash rules) under `location ^~ /uploads/`.
-- **Cloudflare**: use a Cache Rule to **Bypass** cache for **`/uploads/*`** so stale HTML 404s are not reused for image URLs.
+- **Cloudflare**: use a Cache Rule to **Bypass** cache for **`/uploads/*`** so stale HTML 404s are not reused for image URLs. Also **Bypass** cache for **`/feeds/*`** so Meta’s scheduled fetch always gets the latest CSV (not a cached 404 from before the first export).
 - **Listing-grid thumbnails**: each upload writes a small `<hash>_thumb.webp` next to the original. The grid (`/listings/*`) loads the thumb so total page weight is ~1 MB instead of dozens of MB. After deploying the grid-thumb change for the first time, run **`npm run backfill:listing-thumbnails`** on the server (already wired into `deploy.sh`) so legacy uploads also get thumbs.
 
 ## Deploy from macOS (`./deploy.sh`)
@@ -79,8 +79,8 @@ Then from the project root on your Mac:
 What it does:
 
 1. Runs **`npm run build`** locally (Prisma generate/migrate against your dev DB, then Next production build).
-2. **`rsync -avz --delete`** from the repo root to `REMOTE:$DEST/`, excluding among other things `.git`, `.env*`, **`node_modules`**, **`.next`** (the app is **built on the Linux host** after sync), **`prisma/*.db*`, and **`public/uploads`** (production uploads stay on the server).
-3. **`ssh`**: **`npm install`**, **`npx prisma migrate deploy`**, **`pm2 stop`** (frees RAM on small VPS), **`rm -rf .next`**, **`npm run build:deploy`** (same as `build` but **`next build --no-lint`** to save memory), **`npm run backfill:listing-thumbnails`**, **`pm2 restart automerkado`**. Use **~2 GB swap** on **2 GB** RAM. Run builds as **`appuser`** (not root) so **`.next`** and **`prisma/*.db`** stay owned by the app user (root-owned **`.next`** causes **`EACCES`** for `appuser`). Always commit **`package-lock.json`**.
+2. **`rsync -avz --delete`** from the repo root to `REMOTE:$DEST/`, excluding among other things `.git`, `.env*`, **`node_modules`**, **`.next`** (the app is **built on the Linux host** after sync), **`prisma/*.db*`, **`public/uploads`**, and **`public/feeds/*.csv`** (production uploads and the generated Meta feed stay on the server).
+3. **`ssh`**: **`npm install`**, **`npx prisma migrate deploy`**, **`pm2 stop`** (frees RAM on small VPS), **`rm -rf .next`**, **`npm run build:deploy`** (same as `build` but **`next build --no-lint`** to save memory), **`npm run backfill:listing-thumbnails`**, **`pm2 restart automerkado`**, **`npm run export:meta-inventory`**. Use **~2 GB swap** on **2 GB** RAM. Run builds as **`appuser`** (not root) so **`.next`** and **`prisma/*.db`** stay owned by the app user (root-owned **`.next`** causes **`EACCES`** for `appuser`). Always commit **`package-lock.json`**.
 
 **Git workflow:** merge and push **`main`** from your Mac (and `origin`). Deploy does **not** rely on `git pull` on the server; the server tree is updated by rsync and may differ from a `git status` checkout there—that is normal if you keep a clone on the box only for convenience.
 
@@ -111,6 +111,7 @@ When a user places a valid bid, the app attempts to send email via SMTP. If `SMT
 | `npm run db:seed`  | Run `scripts/seed.ts`      |
 | `npm run db:reset` | Reset DB + migrate + seed  |
 | `npm run worker:repossessed-expiry` | Deactivate expired LISTED repossessed listings (scheduled worker) |
+| `npm run export:meta-inventory` | Write **`public/feeds/meta-inventory.csv`** for Meta Messenger / AI vehicle catalog (all LISTED cars) |
 | `npm run backfill:listing-thumbnails` | Generate `_thumb.webp` variants for any `CarImage` that's missing one (idempotent; safe to re-run) |
 | `./deploy.sh` | From **Mac**: local sanity **`npm run build`**, **`rsync`**, then remote **`build:deploy`** + migrate + PM2 (see comments in script) |
 | `./deploy.sh --server` | On **Linux repo clone**: skip Mac/rsync; **`npm install`**, migrate, **`build:deploy`**, backfill, PM2 (use **after `git pull`**) |
@@ -126,9 +127,52 @@ CRON_TZ=Asia/Manila
 30 16 * * 3 cd /path/to/automerkado && npm run worker:repossessed-expiry
 ```
 
+### Meta Messenger / AI inventory (daily CSV)
+
+Meta can import vehicle inventory from a **public CSV URL**. The app generates **`public/feeds/meta-inventory.csv`** (all **LISTED** certified + repossessed cars) and serves it at:
+
+```text
+https://YOUR_DOMAIN/feeds/meta-inventory.csv
+```
+
+No login or token is required — `/feeds/*` is outside admin middleware and is served as a static file from `public/`.
+
+**Requirements**
+
+- Set **`NEXT_PUBLIC_SITE_URL`** in production `.env` (e.g. `https://automerkado.com`) so CSV rows contain correct absolute **`link`** and **`image_link`** URLs.
+- After deploy, **`deploy.sh`** runs **`npm run export:meta-inventory`** so the URL returns **200** immediately.
+- **`rsync --delete`** excludes **`public/feeds/*.csv`** so Mac deploys do not wipe the live feed on the server.
+
+**Meta setup**
+
+1. In Meta Commerce Manager / Messenger AI inventory settings, choose **Scheduled fetch → daily**.
+2. Paste: `https://YOUR_DOMAIN/feeds/meta-inventory.csv`
+
+**Daily cron** (refreshes inventory without redeploying; run as **`appuser`**):
+
+```cron
+CRON_TZ=Asia/Manila
+0 2 * * * cd /home/appuser/automerkado && npm run export:meta-inventory >> /home/appuser/automerkado/logs/meta-inventory-export.log 2>&1
+```
+
+Manual run anytime:
+
+```bash
+cd ~/automerkado && npm run export:meta-inventory
+```
+
+**Verify public access** (no cookies):
+
+```bash
+curl -sI "https://YOUR_DOMAIN/feeds/meta-inventory.csv" | head -5
+curl -s "https://YOUR_DOMAIN/feeds/meta-inventory.csv" | head -2
+```
+
+Expect **HTTP 200**, CSV header row, and data rows for LISTED cars that have at least one image.
+
 ## Project layout
 
-- `scripts/` — Database seed (`seed.ts`), repossessed expiry worker (`repossessed-expiry-worker.ts`)
+- `scripts/` — Database seed (`seed.ts`), repossessed expiry worker (`repossessed-expiry-worker.ts`), Meta inventory CSV export (`export-meta-inventory-csv.ts`)
 - `app/(site)/` — Public marketing + listings + auth pages
 - `app/admin/` — Admin CMS (protected by middleware + role)
 - `app/api/` — Route handlers (bids, inspections, register)

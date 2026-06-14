@@ -17,7 +17,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:reset": "prisma migrate reset --force",
     "worker:repossessed-expiry": "tsx scripts/repossessed-expiry-worker.ts",
-    "backfill:listing-thumbnails": "tsx scripts/backfill-listing-thumbnails.ts"
+    "backfill:listing-thumbnails": "tsx scripts/backfill-listing-thumbnails.ts",
+    "export:meta-inventory": "tsx scripts/export-meta-inventory-csv.ts"
   },
   "prisma": {
     "seed": "tsx scripts/seed.ts"
