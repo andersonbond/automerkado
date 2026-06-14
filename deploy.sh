@@ -92,7 +92,9 @@ _deploy_stop_runtime
 # Cap Node heap during install + Prisma postinstall (multiple processes × heap cap ≈ total RSS).
 NODE_OPTIONS='--max-old-space-size=768' npm install
 npx prisma migrate deploy
-_deploy_clean_dot_next
+if [[ "${AUTOMERKADO_SKIP_REMOTE_BUILD:-}" != "1" ]]; then
+  _deploy_clean_dot_next
+fi
 export NEXT_TELEMETRY_DISABLED=1
 if [[ "${AUTOMERKADO_SKIP_REMOTE_BUILD:-}" == "1" ]]; then
   if [[ ! -f .next/BUILD_ID ]]; then
@@ -126,7 +128,11 @@ EOS
 )
 
 run_remote_deploy() {
-  printf '%s' "$REMOTE_DEPLOY_BODY" | bash -s -- "$1"
+  if [[ "${AUTOMERKADO_SKIP_REMOTE_BUILD:-}" == "1" ]]; then
+    AUTOMERKADO_SKIP_REMOTE_BUILD=1 printf '%s' "$REMOTE_DEPLOY_BODY" | bash -s -- "$1"
+  else
+    printf '%s' "$REMOTE_DEPLOY_BODY" | bash -s -- "$1"
+  fi
 }
 
 if [[ "${1:-}" == "--server" || "${1:-}" == "--on-server" ]]; then
@@ -144,7 +150,11 @@ if [[ "${1:-}" == "--server" || "${1:-}" == "--on-server" ]]; then
     fi
   fi
   echo "→ Server-only (${repo}) — skipping Mac build / rsync"
-  AUTOMERKADO_SKIP_REMOTE_BUILD="$skip_build" run_remote_deploy "$repo"
+  if [[ "$skip_build" == 1 ]]; then
+    AUTOMERKADO_SKIP_REMOTE_BUILD=1 run_remote_deploy "$repo"
+  else
+    run_remote_deploy "$repo"
+  fi
   echo "✓ Deployed (server-only)"
   exit 0
 fi
@@ -165,7 +175,7 @@ if [[ "${1:-}" == "--prebuilt" ]]; then
     --exclude='terminals' \
     ./ "$REMOTE:$DEST/"
   echo "→ Remote: install + migrate + PM2 (skip build)"
-  AUTOMERKADO_SKIP_REMOTE_BUILD=1 printf '%s' "$REMOTE_DEPLOY_BODY" | ssh "$REMOTE" bash -s -- "$DEST"
+  printf '%s' "$REMOTE_DEPLOY_BODY" | ssh "$REMOTE" env AUTOMERKADO_SKIP_REMOTE_BUILD=1 bash -s -- "$DEST"
   echo "✓ Deployed (--prebuilt)"
   exit 0
 fi
